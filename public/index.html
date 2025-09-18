@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Registro / Login</title>
+  <link rel="stylesheet" href="./RegisCss.css" />
+  <script type="module" src="./mainregis.api.js" defer></script>
+</head>
+<body>
+  <main class="contenedor">
+    <!-- Login -->
+    <section class="contenedor__form inicioSecion active">
+      <form id="formLogin" autocomplete="off" novalidate>
+        <h2>Iniciar sesión</h2>
+        <div class="contenedor__input">
+          <ion-icon name="person-outline"></ion-icon>
+          <input class="UsuarioIngresado" placeholder="Usuario" required />
+        </div>
+        <div class="contenedor__input">
+          <ion-icon name="lock-closed-outline"></ion-icon>
+          <input class="Contrasena" name="password" type="password" placeholder="Contraseña" minlength="3" required />
+        </div>
+        <a href="#" id="olvide">¿Olvidaste tu contraseña?</a>
+        <button class="button" id="btnInicioSecion" type="button">Ingresar</button>
+      </form>
+    </section>
+
+    <!-- Registro -->
+    <section class="contenedor__form registro">
+      <form id="formRegistro" autocomplete="off" novalidate>
+        <h2>Registrarse</h2>
+        <div class="contenedor__input">
+          <ion-icon name="person-outline"></ion-icon>
+          <input type="text" placeholder="Usuario" class="UsuarioIngresado" name="username" required />
+        </div>
+        <div class="contenedor__input">
+          <ion-icon name="lock-closed-outline"></ion-icon>
+          <input type="password" placeholder="Contraseña" class="Contrasena1" name="password" minlength="3" required />
+        </div>
+        <div class="contenedor__input">
+          <ion-icon name="key-outline"></ion-icon>
+          <input type="text" placeholder="Chat ID de Telegram" class="ChatClave" name="chatId" required />
+          <button type="button" class="infoChatId" title="¿Cómo conseguir tu Chat ID?">
+            <ion-icon name="help-circle-outline"></ion-icon>
+          </button>
+        </div>
+        <button class="button" id="btnRegistro" type="button">Crear cuenta</button>
+      </form>
+    </section>
+
+    <!-- Botón de cambio -->
+    <div class="switch-container">
+      <p id="switchText">¿No tenés cuenta?</p>
+      <button id="switchBtn" class="button-alt" type="button">Registrarse</button>
+    </div>
+  </main>
+
+  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+
+  <script>
+  document.querySelector('.infoChatId')?.addEventListener('click', () => {
+    alert(
+      "¿Cómo conseguir tu Chat ID?\n\n" +
+      "1. Abre Telegram y busca el bot @userinfobot.\n" +
+      "2. Inicia el chat y escribe /start.\n" +
+      "3. El bot te mostrará tu Chat ID (un número).\n" +
+      "4. Copia ese número y pégalo en el campo 'Clave del chat'.\n\n" +
+      "Para iniciar el chat con el bot de la app, abre este link https://t.me/RimainderBot_bot o busca RimainderBot_bot en Telegram y envía /start."
+    );
+  });
+</script>
+
+
+</body>
+</html>

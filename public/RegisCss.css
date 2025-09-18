@@ -1,0 +1,148 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Montserrat", sans-serif;
+}
+
+body {
+  min-height: 100vh;
+  background-color: aliceblue;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+}
+
+.contenedor {
+  width: 100%;
+  max-width: 420px;
+  background-color: #B5BFF0;
+  border-radius: 15px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.15);
+  overflow: hidden;
+  flex-direction: column;
+}
+
+.contenedor__form {
+  padding: 24px;
+  display: none;
+}
+
+.contenedor__form.active {
+  display: block;
+}
+
+h2 {
+  text-align: center;
+  margin-bottom: 24px;
+  color: #333;
+}
+
+.contenedor__input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+}
+
+.contenedor__input ion-icon {
+  font-size: 20px;
+  color: #576ac9;
+}
+
+.contenedor__input input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 15px;
+}
+
+a {
+  display: block;
+  text-align: center;
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: #333;
+  text-decoration: none;
+}
+
+.button {
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  background-color: #576ac9;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.button:hover {
+  background-color: #4653a7;
+}
+
+.infoChatId {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.infoChatId ion-icon {
+  font-size: 18px;
+  color: #576ac9;
+}
+
+/* Botón de cambio */
+.switch-container {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.switch-container p {
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #333;
+}
+
+.button-alt {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: #94A6FF;
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.3s;
+  margin: 15px;
+}
+
+.button-alt:hover {
+  background: #7d93ff;
+}
+
+/* Desktop */
+@media (min-width: 768px) {
+  .contenedor {
+    max-width: 500px;
+    display: flex;
+    gap: 20px;
+  }
+
+  .contenedor__form {
+    flex: 1;
+  }
+
+  .button-alt {
+    font-size: 16px;
+    padding: 15px;
+    margin: 15px;
+  }
+}

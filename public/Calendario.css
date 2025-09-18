@@ -1,0 +1,614 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
+:root {
+    --Color-Principal: #94A6FF;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Montserrat", sans-serif;
+}
+
+body {
+    min-height: 100vh;
+    background-color: rgb(255, 255, 228);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.ContenedorPrincipal {
+    position: relative;
+    width: 1200px;
+    min-height: 850px;
+    margin: 0 auto;
+    padding: 5px;
+    color: white;
+    display: flex;
+    border-radius: 10px;
+    background-color: #B5BFF0;
+}
+
+.izquierda {
+    width: 60%;
+    padding: 20px;
+}
+
+.calendario {
+ position: relative;
+ width: 100%;
+ height: 100%;
+ display: flex;
+ flex-direction: column;
+ flex-wrap: wrap;
+ justify-content: space-between;
+  color: white;
+  background-color: var(--Color-Principal);
+  border-radius: 45px 45px 20px 20px;
+}
+
+.calendario .meses {
+    width: 100%;
+    height: 60px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 50px;
+    font-size: 1.5rem;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.calendario .meses ion-icon {
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.calendario .meses ion-icon:hover {
+    color: black;
+    font-size: 2.5rem;
+}
+
+.calendario .DiasSemana {
+    width: 100%;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    font-size: 1rem;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+ .calendario .DiasSemana div{
+    width: 14.28%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+ 
+.calendario .Dias {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    padding: 0 20px;
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 20px;
+}
+
+.calendario .Dias .dia {
+    width: 14.28%;
+    height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: black;
+    border: 1px solid rgb(195, 201, 255);
+}
+
+
+.calendario .dia:not(.dia-previo, .dia-siguiente):hover {
+    background-color: #576ac9;
+    color: white;
+}
+
+.calendario .Dias .dia-previo,
+.calendario .Dias .dia-siguiente {
+    color: grey;
+}
+
+.calendario .Dias .hoy {
+   color: rgb(255, 157, 10);
+   font-size: 1rem;
+}
+
+.calendario .Dias .acive {
+    position: relative;
+    font-size: 2rem;
+    color: white;
+    background-color: #576ac9;
+}
+
+.calendario .Dias .acive::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    box-shadow: 0 0 10px #576ac9;
+}
+
+
+
+.calendario .Dias .evento{ 
+    position: relative;
+}
+
+.calendario .Dias .evento::after {
+    content: "";
+    position: absolute;
+    bottom: 10%;
+    left: 50%;
+    width: 75%;
+    height: 6px;
+    border-radius: 30px;
+    transform: translateX(-50%);
+    background-color: #576ac9;
+}
+
+.calendario .evento:hover::after {
+    background-color: white;
+}
+
+.calendario .acive.evento::after {
+    background-color: white;
+    bottom: 20%;
+}
+
+.calendario .acive.evento{
+    padding-bottom: 10px;
+}
+
+.calendario .elegirFechaYFechaActual{
+    width: 100%;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 5px;
+    padding: 0 20px;
+    margin-bottom: 20px;
+    color: #576ac9;
+}
+
+.calendario .elegirFechaYFechaActual .elegirFecha{
+    display: flex;
+    align-items: center;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #576ac9;
+    background-color: white;
+}
+.calendario .elegirFechaYFechaActual .elegirFecha .EntradaFecha{
+    width: 100%;
+    height: 34px;
+    border: none;
+    outline: none;
+    border-radius: 10px;
+    padding: 0 10px;
+    color: #576ac9;
+}
+
+.calendario .elegirFechaYFechaActual button{
+    padding: 5px 10px;
+    border: none;
+    border-radius: 10px;
+    background-color: transparent;
+    cursor: pointer;
+    color: #576ac9;
+    font-size: 1.2rem;
+}
+.calendario .elegirFechaYFechaActual button:hover{
+    color: white;
+    background-color: #576ac9;
+    font-size: 1.5rem;
+}
+
+.calendario .elegirFechaYFechaActual .BtnEntradaFecha{
+    background-color: white;
+
+}
+
+.ContenedorPrincipal .derecha {
+    position: relative;
+    width: 40%;
+    min-height: 100%;
+    padding: 20px 0;
+}
+.derecha .Fecha-de-hoy {
+    width: 100%;
+    height: 50px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 40px;
+    padding-left:  70px;
+    margin-top: 50px;
+    margin-bottom: 20px;
+    text-transform: capitalize;
+}
+
+.Fecha-de-hoy .eventoDia {
+    font-size: 2rem;
+    font-weight: 500;
+}
+.Fecha-de-hoy .FechaEvento {
+    font-size: 1rem;
+    font-weight: 500;
+    color: rgb(126, 127, 139);
+}
+
+.eventos {
+    width: 100%;
+    height: 100%;
+    max-height: 600px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: 4px;
+}
+
+.eventos .evento {
+    position: relative;
+    width: 95%;
+    min-height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 20px;
+    padding-left: 50px;
+    color: white;
+    cursor: pointer;
+    background: linear-gradient(90deg,lightblue, transparent); 
+    border-radius: 25px;
+}
+
+.eventos .evento:nth-child(even) {
+    background: transparent;
+}
+
+.eventos .evento:hover {
+    background: linear-gradient(90deg,#576ac9 , transparent);
+}
+
+.eventos .evento .evento-titulo {
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+    gap: 10px;
+}
+
+.eventos .evento .evento-titulo .TituloEvento {
+    font-size: 1.2rem;
+    font-weight: 400;
+    margin-left: 20px;
+}
+
+.eventos .evento .evento-titulo ion-icon {
+    font-size: 1.5rem;
+    color: rgb(255, 157, 10);
+}
+
+.eventos .evento:hover .evento-titulo ion-icon, .eventos .evento:hover .evento-hora{
+    color: white;
+}
+
+.eventos .evento .evento-hora {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: rgb(126, 127, 139);
+    margin-left: 15px;
+    pointer-events: none;
+}
+
+.eventos .evento::after {
+content: "✔";
+position: absolute;
+top: 50%;
+right: 0;
+font-size: 2.5rem;
+display: none;
+align-items: center;
+justify-content: center;
+opacity: 0.3;
+color: black;
+transform: translateY(-50%);
+}
+
+.eventos .evento:hover::after {
+    display: flex;
+}
+
+.eventos .no-evento{
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: rgb(126, 127, 139);
+    opacity: 0.5;
+}
+
+
+.agregar-evento-wrapper{
+    position: absolute;
+    bottom: 100px;
+    left: 50%;
+    width: 90%;
+    max-height: 0;
+    overflow: hidden;
+    border-radius: 5px;
+    background-color: white;
+    transform: translateX(-50%);
+    transition: max-height 0.5s ease-in-out;
+
+}
+.agregar-evento-wrapper.active{
+    max-height: 300px;
+}
+
+.agregar-evento-header {
+    width: 100%;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    color: black;
+    border-bottom: 1px solid rgb(195, 201, 255);
+}
+
+.agregar-evento-header .cerrar {
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.agregar-evento-header .cerrar:hover {
+    color: rgb(126, 127, 139);
+}
+
+.agregar-evento-header .titulo {
+    font-size: 1.2rem;
+    font-weight: 500;
+}
+
+.agregar-evento-cuerpo {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 20px;
+}
+
+.agregar-evento-cuerpo .agregar-evento-inputs {
+    width: 100%;
+    height: 37px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.agregar-evento-cuerpo .selector{
+    width: 100%;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.agregar-evento-cuerpo .agregar-evento-inputs input {
+    width: 100%;
+    height: 100%;
+    border: none;
+    outline: none;
+    border-bottom: 1px solid rgb(195, 201, 255);
+    padding: 0 10px;
+    font-size: 1rem;
+    font-weight: 400;
+    color: rgb(126, 127, 139);
+}
+.agregar-evento-cuerpo .agregar-evento-inputs input::placeholder{
+    color: #576ac9;
+}
+
+.agregar-evento-cuerpo .agregar-evento-inputs input:focus{
+    border-bottom: 1px solid #576ac9;
+}
+
+
+
+.agregar-evento-footer{
+    display: block;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.agregar-evento-btn {
+    height: 40px;
+    font-size: 1rem;
+    font-weight: 500;
+    outline: none;
+    border: none;
+    border-radius: 5px;
+    background-color: #576ac9;
+    color: white;
+    cursor: pointer;
+    padding: 5px 10px;
+}
+
+.agregar-evento-btn:hover {
+    background-color: white;
+    color: #576ac9;
+}
+
+.AgregarEventoBtn{
+    position: absolute;
+    bottom: 40px;
+    right: 30px;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    background-color: transparent;
+    border: none;
+    color: #576ac9;
+    cursor: pointer;   
+}
+.AgregarEventoBtn:hover{
+    color: white;
+}
+.AgregarEventoBtn ion-icon{
+    pointer-events: none;
+}
+
+.MostrarEventos{
+    position: absolute;
+    bottom: 40px;
+    left: 30px;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    background-color: transparent;
+    border: none;
+    color: #576ac9;
+    cursor: pointer;   
+}
+.MostrarEventos:hover{
+    color: white;
+}
+.MostrarEventos ion-icon{
+    pointer-events: none;
+}
+
+
+
+@media (max-width: 1000px) {
+    body {
+        align-items: flex-start;
+        justify-content: flex-start;
+    }
+    .ContenedorPrincipal{
+        min-height: 100vh;
+        flex-direction: column;
+        border-radius: 0;
+    }
+
+    .ContenedorPrincipal .izquierda,
+    .ContenedorPrincipal .derecha{
+        width: 100%;
+        height: 100%;
+        padding: 20 0;
+    }
+
+
+
+    .calendario::before,
+    .calendario::after{
+        top: 100%;
+        left: 50%;
+        width: 97%;
+        height: 12px;
+        border-radius: 0 0 10px 10px;
+        transform: translateX(-50%);
+    }
+
+    .calendario::before{
+        width: 94%;
+        top: calc(100% + 12px);
+    }
+
+    .eventos{
+       padding-bottom: 340px;
+    }
+
+    .agregar-evento-wrapper{
+        bottom: 100px;
+    }
+}
+
+@media (max-width: 500px) {
+    .calendario .meses {
+        height: 75px;
+    }
+    .calendario .DiasSemana{
+        height: 50px;
+    }
+    .calendario .Dias .dia{
+        height: 40px;
+        font-size: 0.8rem;
+    }
+    .calendario .Dias .dia.acive,
+    .calendario .Dias .dia.hoy{
+        font-size: 1rem;
+    }
+    .derecha .Fecha-de-hoy{
+        padding: 20px;
+    }
+}
+
+.BtnCerrarSesion{
+    position: absolute;
+    top: 30px;
+    left: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 10px;
+    font-size: 1rem;
+    background-color: transparent;
+    border-radius: 50px;
+    color: #576ac9;
+    cursor: pointer;
+    border: 0.2px solid #576ac9;
+}
+
+
+
+.BtnCerrarSesion:hover{
+    color: white;
+    background-color: #576ac9;
+    font-size: 1.2rem;
+}
+
+.BtnCerrarSesion:hover ion-icon{
+    font-size: 1.5rem;
+}
+
+
+.oculto{
+    display: none;
+}

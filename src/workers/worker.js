@@ -41,9 +41,9 @@ const startWorker = async () => {
         if (eventDateUTC.getTime() < nowUTC.getTime()) continue;
 
         const reminders = [
-          { minutesBefore: 1440, key: 'remind1d', text: '1 día antes' },
-          { minutesBefore: 60, key: 'remind1h', text: '1 hora antes' },
-          { minutesBefore: 30, key: 'remind30m', text: '30 minutos antes' },
+          { minutesBefore: 1440, key: 'remind1d', text: 'Falta 1 día' },
+          { minutesBefore: 60, key: 'remind1h', text: 'Falta 1 hora' },
+          { minutesBefore: 30, key: 'remind30m', text: 'Faltan 30 minutos' },
         ];
 
         for (const r of reminders) {
@@ -60,7 +60,7 @@ const startWorker = async () => {
               hour12: false,
             });
 
-            const mensaje = `⏰ Recordatorio: ${ev.title} ${emoji} - ${r.text}\nHora: ${eventTimeArg}`;
+            const mensaje = `⏰ Recordatorio: ${ev.title} ${emoji} \n ${r.text}`;
 
             try {
               await sendTelegramMessage(mensaje, ev.user.chat_id, 'HTML');

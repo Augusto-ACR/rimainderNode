@@ -1,3 +1,4 @@
+// src/workers/worker.js
 import 'reflect-metadata';
 import AppDatasource from '../module/user/providers/datasource.provider.js';
 import { Event } from '../module/user/entities/event.entity.js';
@@ -16,60 +17,68 @@ const CATEGORY_EMOJI = {
 };
 
 const startWorker = async () => {
-  await AppDatasource.initialize();
-  const eventRepo = AppDatasource.getRepository(Event);
-  const userRepo = AppDatasource.getRepository(User);
+  try {
+    await AppDatasource.initialize();
+    const eventRepo = AppDatasource.getRepository(Event);
+    const userRepo = AppDatasource.getRepository(User);
 
-  cron.schedule('* * * * *', async () => { // ejecuta cada minuto
-    const now = new Date();
+    console.log('Worker de recordatorios iniciado');
 
-    const events = await eventRepo.find({ relations: ['user'] });
+    // Cron cada minuto
+    cron.schedule('* * * * *', async () => {
+      const now = new Date();
+      const events = await eventRepo.find({ relations: ['user'] });
 
-    for (const ev of events) {
-      if (!ev.user?.chat_id) continue;
+      for (const ev of events) {
+        if (!ev.user?.chat_id) continue;
 
-      // Convertimos fecha y hora del evento a objeto Date
-      const [year, month, day] = ev.date.split('-').map(Number);
-      const [hours, minutes] = ev.time.split(':').map(Number);
+        // Parseamos fecha y hora del evento en UTC
+        const [year, month, day] = ev.date.split('-').map(Number);
+        const [hours, minutes] = ev.time.split(':').map(Number);
+        const eventDateUTC = new Date(Date.UTC(year, month - 1, day, hours, minutes));
 
-      // Fecha del evento en Argentina (UTC-3)
-      const eventDateTime = new Date(Date.UTC(year, month - 1, day, hours - 3, minutes));
+        // Ignorar eventos que ya pasaron
+        if (eventDateUTC.getTime() < now.getTime()) continue;
 
-      // Solo consideramos eventos futuros
-      if (eventDateTime < now) continue;
+        const reminders = [
+          { minutesBefore: 1440, key: 'remind1d', text: '1 día antes' },
+          { minutesBefore: 60, key: 'remind1h', text: '1 hora antes' },
+          { minutesBefore: 30, key: 'remind30m', text: '30 minutos antes' },
+        ];
 
-      const reminders = [
-        { minutesBefore: 1440, key: 'remind1d', text: '1 día antes' },
-        { minutesBefore: 60, key: 'remind1h', text: '1 hora antes' },
-        { minutesBefore: 30, key: 'remind30m', text: '30 minutos antes' },
-      ];
+        for (const r of reminders) {
+          const triggerTime = new Date(eventDateUTC.getTime() - r.minutesBefore * 60000);
 
-      for (const r of reminders) {
-        const triggerTime = new Date(eventDateTime.getTime() - r.minutesBefore * 60000);
+          if (now >= triggerTime && !ev[r.key]) {
+            const emoji = CATEGORY_EMOJI[ev.category] || '📌';
 
-        if (now >= triggerTime && !ev[r.key]) {
-          const emoji = CATEGORY_EMOJI[ev.category] || '📌';
+            // Convertimos a hora de Argentina solo para mostrar
+            const eventTimeArg = eventDateUTC.toLocaleTimeString('es-AR', {
+              timeZone: 'America/Argentina/Buenos_Aires',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false,
+            });
 
-          // Hora del evento en Argentina para mostrar en el mensaje
-          const eventTimeArg = eventDateTime.toLocaleTimeString('es-AR', {
-            timeZone: 'America/Argentina/Buenos_Aires',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
-          });
+            const mensaje = `⏰ Recordatorio: ${ev.title} ${emoji} - ${r.text}\nHora: ${eventTimeArg}`;
 
-          const mensaje = `⏰ Recordatorio: ${ev.title} ${emoji} - ${r.text}\nHora: ${eventTimeArg}`;
-          await sendTelegramMessage(mensaje, ev.user.chat_id, 'HTML');
+            try {
+              await sendTelegramMessage(mensaje, ev.user.chat_id, 'HTML');
+              console.log(`Recordatorio enviado: ${ev.title} - ${r.text}`);
+            } catch (err) {
+              console.error(`Error enviando Telegram para evento ${ev.title}:`, err.message);
+            }
 
-          // Marcamos el recordatorio como enviado
-          ev[r.key] = true;
-          await eventRepo.save(ev);
+            // Marcamos recordatorio como enviado
+            ev[r.key] = true;
+            await eventRepo.save(ev);
+          }
         }
       }
-    }
-  });
-
-  console.log('Worker de recordatorios iniciado');
+    });
+  } catch (err) {
+    console.error('Error inicializando worker:', err.message);
+  }
 };
 
 startWorker();

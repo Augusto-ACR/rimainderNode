@@ -24,21 +24,21 @@ const startWorker = async () => {
 
     console.log('Worker de recordatorios iniciado');
 
-    // Cron cada minuto
     cron.schedule('* * * * *', async () => {
-      const now = new Date();
+      const nowUTC = new Date(); // hora actual en UTC
+
       const events = await eventRepo.find({ relations: ['user'] });
 
       for (const ev of events) {
         if (!ev.user?.chat_id) continue;
 
-        // Parseamos fecha y hora del evento en UTC
+        // Parseamos fecha y hora como UTC
         const [year, month, day] = ev.date.split('-').map(Number);
         const [hours, minutes] = ev.time.split(':').map(Number);
         const eventDateUTC = new Date(Date.UTC(year, month - 1, day, hours, minutes));
 
-        // Ignorar eventos que ya pasaron
-        if (eventDateUTC.getTime() < now.getTime()) continue;
+        // Ignoramos eventos que ya pasaron
+        if (eventDateUTC.getTime() < nowUTC.getTime()) continue;
 
         const reminders = [
           { minutesBefore: 1440, key: 'remind1d', text: '1 día antes' },
@@ -49,7 +49,7 @@ const startWorker = async () => {
         for (const r of reminders) {
           const triggerTime = new Date(eventDateUTC.getTime() - r.minutesBefore * 60000);
 
-          if (now >= triggerTime && !ev[r.key]) {
+          if (nowUTC >= triggerTime && !ev[r.key]) {
             const emoji = CATEGORY_EMOJI[ev.category] || '📌';
 
             // Convertimos a hora de Argentina solo para mostrar
@@ -69,7 +69,7 @@ const startWorker = async () => {
               console.error(`Error enviando Telegram para evento ${ev.title}:`, err.message);
             }
 
-            // Marcamos recordatorio como enviado
+            // Marcamos el recordatorio como enviado
             ev[r.key] = true;
             await eventRepo.save(ev);
           }

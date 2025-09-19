@@ -1,14 +1,10 @@
-// src/module/event/controllers/event.controller.js (filtrado por usuario)
-import { request, response } from 'express';
-import AppDatasource from '../../user/providers/datasource.provider.js';
-import { Event } from '../entities/event.entity.js';
-import { createEventSchema, updateEventSchema } from '../schema/event.schema.js';
-import { sendTelegramMessage } from '../../../utils/telegram.js';
-import { User } from '../../user/entities/user.entity.js';   
-
-
-const repo = AppDatasource.getRepository(Event);
-const userRepo = AppDatasource.getRepository(User);
+// src/workers/worker.js
+import 'reflect-metadata';
+import AppDatasource from '../module/user/providers/datasource.provider.js';
+import { Event } from '../module/user/entities/event.entity.js';
+import { User } from '../module/user/entities/user.entity.js';
+import { sendTelegramMessage } from '../utils/telegram.js';
+import cron from 'node-cron';
 
 const CATEGORY_EMOJI = {
   'cumpleaños': '🎂',
@@ -20,133 +16,69 @@ const CATEGORY_EMOJI = {
   'otro': '📌',
 };
 
-// GET /events?year=YYYY&month=MM  -> eventos del mes DEL USUARIO
-export const listByMonth = async (req = request, res = response) => {
+const startWorker = async () => {
   try {
-    const year = Number(req.query.year);
-    const month = Number(req.query.month);
-    if (!year || !month) return res.status(400).json({ message: 'year y month son requeridos' });
-    if (!req.user?.id) return res.status(401).json({ message: 'No autenticado' });
+    await AppDatasource.initialize();
+    const eventRepo = AppDatasource.getRepository(Event);
+    const userRepo = AppDatasource.getRepository(User);
 
-    const events = await repo.find({
-      where: { year, month, user: { id: req.user.id } },
-      order: { day: 'ASC', time: 'ASC' }
-    });
-    return res.json({ events });
-  } catch (err) {
-    return res.status(500).json({ message: 'Error listando eventos', error: String(err) });
-  }
-};
+    console.log('Worker de recordatorios iniciado');
 
-// POST /events  { title, date: YYYY-MM-DD, time: HH:MM }
-export const createEvent = async (req = request, res = response) => {
-  try {
-    if (!req.user?.id) return res.status(401).json({ message: 'No autenticado' });
-    const { error, value } = createEventSchema.validate(req.body);
-    if (error) return res.status(400).json({ message: error.message });
+    cron.schedule('* * * * *', async () => {
+      const nowUTC = new Date(); // hora actual en UTC
 
-  const { title, date, time, category, description } = value; 
-    
-    const [y, m, d] = date.split('-').map(Number);
+      const events = await eventRepo.find({ relations: ['user'] });
 
-    const ev = repo.create({ title, date, time, year: y, month: m, day: d, category: category || 'otro', description: description || null,   user: { id: req.user.id } });
-    await repo.save(ev);
-    try {
-      const owner = await userRepo.findOne({ where: { id: req.user.id } });
-      if (owner?.chat_id) {
-        // Formatear fecha a dd-mm-YYYY
-        const [yyyy, mm, dd] = date.split('-');
-        const fecha = `${dd}-${mm}-${yyyy}`;
-        const emoji = CATEGORY_EMOJI[ev.category] || '📌';
-        const lineaComentario = ev.description ? `• ${ev.description}` : "";
-        
-        const mensaje =
-  `🗓️ Nuevo evento creado ✨\n \n` +
-  `<b>  ${title} ${emoji}</b> \n ` +
-  `• Fecha: ${fecha}\n ` +
-  `• Hora: ${time}\n ` +
-  `${lineaComentario}`.trim(); // quita salto si no hay comentario
+      for (const ev of events) {
+        if (!ev.user?.chat_id) continue;
 
-await sendTelegramMessage(mensaje, owner.chat_id, 'HTML');
+        // Parseamos fecha y hora como UTC
+        const [year, month, day] = ev.date.split('-').map(Number);
+        const [hours, minutes] = ev.time.split(':').map(Number);
+        const eventDateUTC = new Date(Date.UTC(year, month - 1, day, hours, minutes));
+
+        // Ignoramos eventos que ya pasaron
+        if (eventDateUTC.getTime() < nowUTC.getTime()) continue;
+
+        const reminders = [
+          { minutesBefore: 1440, key: 'remind1d', text: '1 día antes' },
+          { minutesBefore: 60, key: 'remind1h', text: '1 hora antes' },
+          { minutesBefore: 30, key: 'remind30m', text: '30 minutos antes' },
+        ];
+
+        for (const r of reminders) {
+          const triggerTime = new Date(eventDateUTC.getTime() - r.minutesBefore * 60000);
+
+          if (nowUTC >= triggerTime && !ev[r.key]) {
+            const emoji = CATEGORY_EMOJI[ev.category] || '📌';
+
+            // Convertimos a hora de Argentina solo para mostrar
+            const eventTimeArg = eventDateUTC.toLocaleTimeString('es-AR', {
+              timeZone: 'America/Argentina/Buenos_Aires',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false,
+            });
+
+            const mensaje = `⏰ Recordatorio: ${ev.title} ${emoji} - ${r.text}\nHora: ${eventTimeArg}`;
+
+            try {
+              await sendTelegramMessage(mensaje, ev.user.chat_id, 'HTML');
+              console.log(`Recordatorio enviado: ${ev.title} - ${r.text}`);
+            } catch (err) {
+              console.error(`Error enviando Telegram para evento ${ev.title}:`, err.message);
+            }
+
+            // Marcamos el recordatorio como enviado
+            ev[r.key] = true;
+            await eventRepo.save(ev);
+          }
+        }
       }
-    } catch (e) {
-      console.warn('No se pudo enviar Telegram:', e.message);
-      // no rompemos la respuesta al cliente si falló Telegram
-    }
-    return res.status(201).json({ message: 'Evento creado', event: ev });
-  } catch (err) {
-    return res.status(500).json({ message: 'Error creando evento', error: String(err) });
-  }
-};
-
-// PUT /events/:id  -> sólo si pertenece al usuario
-export const updateEvent = async (req = request, res = response) => {
-  try {
-    if (!req.user?.id) return res.status(401).json({ message: 'No autenticado' });
-    const id = Number(req.params.id);
-    const { error, value } = updateEventSchema.validate(req.body);
-    if (error) return res.status(400).json({ message: error.message });
-
-    const ev = await repo.findOne({ where: { id }, relations: ['user'] });
-    if (!ev || ev.user?.id !== req.user.id) return res.status(404).json({ message: 'Evento no encontrado' });
-
-    if (value.date) {
-      const [y, m, d] = value.date.split('-').map(Number);
-      ev.year = y; ev.month = m; ev.day = d;
-      ev.date = value.date;
-    }
-    if (value.title) ev.title = value.title;
-    if (value.time) ev.time = value.time;
-
-    await repo.save(ev);
-    return res.json({ message: 'Evento actualizado', event: ev });
-  } catch (err) {
-    return res.status(500).json({ message: 'Error actualizando evento', error: String(err) });
-  }
-};
-
-// DELETE /events/:id -> sólo si pertenece al usuario
-export const deleteEvent = async (req = request, res = response) => {
-  try {
-    if (!req.user?.id) return res.status(401).json({ message: 'No autenticado' });
-
-    const id = Number(req.params.id);
-    const ev = await repo.findOne({ where: { id }, relations: ['user'] });
-
-    if (!ev || ev.user?.id !== req.user.id)
-      return res.status(404).json({ message: 'Evento no encontrado' });
-
-    // Guardamos el título antes de eliminar
-    const titulo = ev.title;
-
-    // Eliminamos el evento
-    await repo.remove(ev);
-
-    // Enviar mensaje a Telegram
- try {
-    const owner = await userRepo.findOne({ where: { id: req.user.id } });
-
-    // Obtener hora en Argentina (America/Argentina/Buenos_Aires)
-    const now = new Date();
-    const argentinaTime = now.toLocaleTimeString('es-AR', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-        timeZone: 'America/Argentina/Buenos_Aires'
     });
-
-    const mensaje =
-      `🗓️ Evento resuelto ✨\n\n` +
-      `<b>${titulo}</b> Fue resuelto por ${req.user.username}\n` +
-      `• Hora: ${argentinaTime}\n`.trim();
-
-    await sendTelegramMessage(mensaje, owner.chat_id, 'HTML');
-} catch (err) {
-    console.error("Error enviando Telegram:", err);
-}
-
-    return res.json({ message: `El evento "${titulo}" fue resuelto y eliminado` });
   } catch (err) {
-    return res.status(500).json({ message: 'Error eliminando evento', error: String(err) });
+    console.error('Error inicializando worker:', err.message);
   }
 };
+
+startWorker();

@@ -10,7 +10,7 @@ export const User = new EntitySchema({
     password: { type: String, length: 255 },
     role: { type: String, length: 20, default: 'user' },
     created_at: { type: 'timestamp', createDate: true },
-    chat_id: { type: String, length: 64, nullable: true },
+    chat_id: { type: 'bigint', nullable: true },
   },
   indices: [{ name: 'IDX_USERS_USERNAME', columns: ['username'], unique: true }],
 });

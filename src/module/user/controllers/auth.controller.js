@@ -9,7 +9,7 @@ const repo = AppDatasource.getRepository(User);
 
 export const register = async (req = request, res = response) => {
   try {
-    const { username, password } = req.body;
+    const { username, password, chatId } = req.body; // <-- agrega chatId
     if (!username || !password)
       return res.status(400).json({ message: 'usuario y contraseña son requeridos' });
 
@@ -17,7 +17,11 @@ export const register = async (req = request, res = response) => {
     if (exists) return res.status(409).json({ message: 'El usuario ya existe' });
 
     const passwordHash = await bcrypt.hash(password, 12);
-    const user = repo.create({ username, password: passwordHash });
+    const user = repo.create({
+      username,
+      password: passwordHash,
+      chat_id: chatId ? Number(chatId) : null // <-- guarda chat_id
+    });
     await repo.save(user);
 
     const { password: _, ...safeUser } = user;

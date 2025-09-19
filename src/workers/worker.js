@@ -32,10 +32,8 @@ const startWorker = async () => {
       for (const ev of events) {
         if (!ev.user?.chat_id) continue;
 
-        // Parseamos fecha y hora como UTC
-        const [year, month, day] = ev.date.split('-').map(Number);
-        const [hours, minutes] = ev.time.split(':').map(Number);
-        const eventDateUTC = new Date(Date.UTC(year, month - 1, day, hours, minutes));
+// Parseamos fecha y hora directamente como Argentina (UTC-3)
+const eventDateUTC = new Date(`${ev.date}T${ev.time}:00-03:00`);
 
         // Ignoramos eventos que ya pasaron
         if (eventDateUTC.getTime() < nowUTC.getTime()) continue;

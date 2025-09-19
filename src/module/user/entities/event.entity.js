@@ -5,7 +5,7 @@ export const Event = new EntitySchema({
   name: 'Event',
   tableName: 'events',
   columns: {
-    id: { type: Number, primary: true, generated: true },
+    id: { type: 'int', primary: true, generated: true },
     title: { type: String, length: 120 },
     // Fecha del evento (solo día, sin hora)
     date: { type: 'date' },

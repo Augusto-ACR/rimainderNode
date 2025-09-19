@@ -9,7 +9,7 @@ dotenv.config();
 
 
 const AppDatasource = new DataSource({
-  type: 'mysql',
+  type: 'postgres',
   host: process.env.DB_HOST,
   port: Number(process.env.DB_PORT),
   username: process.env.DB_USER,
@@ -18,6 +18,9 @@ const AppDatasource = new DataSource({
   synchronize: true,   // ⬅ en dev ok
   logging: false,
   entities: [User, Event],   // ⬅ registrar ambas entidades
+    ssl: {
+    rejectUnauthorized: false,  // ⬅ SSL requerido en Render
+  },
 });
 
 export default AppDatasource;

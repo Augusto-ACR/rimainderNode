@@ -4,7 +4,7 @@ export const User = new EntitySchema({
   name: 'User',
   tableName: 'users',
   columns: {
-    id: { type: Number, primary: true, generated: true },
+    id: { type: 'int', primary: true, generated: true },
     username: { type: String, length: 50, unique: true },
     // si tu columna real es password_hash, cambiá el nombre:
     password: { type: String, length: 255 },

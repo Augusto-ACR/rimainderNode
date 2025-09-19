@@ -123,23 +123,27 @@ export const deleteEvent = async (req = request, res = response) => {
     await repo.remove(ev);
 
     // Enviar mensaje a Telegram
-    try {
-        const owner = await userRepo.findOne({ where: { id: req.user.id } });
+ try {
+    const owner = await userRepo.findOne({ where: { id: req.user.id } });
 
-           const now = new Date();
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const time = `${hours}:${minutes}`;
+    // Obtener hora en Argentina (America/Argentina/Buenos_Aires)
+    const now = new Date();
+    const argentinaTime = now.toLocaleTimeString('es-AR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZone: 'America/Argentina/Buenos_Aires'
+    });
 
-                const mensaje =
-  `🗓️ Evento resuelto ✨\n \n` +
-  `<b>  ${titulo} </b> Fue resuelto por ${req.user.username}\n ` +
-  `• Hora: ${time}\n `.trim(); // quita salto si no hay comentario
+    const mensaje =
+      `🗓️ Evento resuelto ✨\n\n` +
+      `<b>${titulo}</b> Fue resuelto por ${req.user.username}\n` +
+      `• Hora: ${argentinaTime}\n`.trim();
 
-      await sendTelegramMessage(mensaje,owner.chat_id, 'HTML');
-    } catch (err) {
-      console.error("Error enviando Telegram:", err);
-    }
+    await sendTelegramMessage(mensaje, owner.chat_id, 'HTML');
+} catch (err) {
+    console.error("Error enviando Telegram:", err);
+}
 
     return res.json({ message: `El evento "${titulo}" fue resuelto y eliminado` });
   } catch (err) {

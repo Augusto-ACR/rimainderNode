@@ -1,92 +1,109 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Calendario</title>
-    <link rel="stylesheet" href="Calendario.css">
+    <link rel="stylesheet" href="Calendario.css" />
     <script src="Calendario.api.auth.safe.js" defer></script>
-</head>
-<body>
-
+  </head>
+  <body>
     <div class="ContenedorPrincipal">
-        <div class="izquierda">
-            <div class="calendario">
-                <div class="meses">
-                    <ion-icon name="arrow-back-outline" class="Irizquierda"></ion-icon>
-                    <div class="Fecha"> </div>
-                    <ion-icon name="arrow-forward-outline" class="Irderecha"></ion-icon>
-                </div>
-                <div class="DiasSemana">
-                    <div>Dom</div>
-                    <div>Lun</div>
-                    <div>Mar</div>
-                    <div>Mié</div>
-                    <div>Jue</div>
-                    <div>Vie</div>
-                    <div>Sáb</div>
-                    
-                </div>
-                <div class="Dias">
-                    
-                </div>
-                <div class="elegirFechaYFechaActual">
-                    <div class="elegirFecha">
-                        <input type="text" placeholder="mm/yyyy" class="EntradaFecha">
-                        <button class="BtnEntradaFecha"><ion-icon name="arrow-forward-circle-outline"></ion-icon></button>
-                    </div>
-                    <button class="BtnFechaActual">Hoy</button>
+      <div class="izquierda">
+        <div class="calendario">
+          <div class="meses">
+            <ion-icon name="arrow-back-outline" class="Irizquierda"></ion-icon>
+            <div class="Fecha"></div>
+            <ion-icon name="arrow-forward-outline" class="Irderecha"></ion-icon>
+          </div>
+          <div class="DiasSemana">
+            <div>Dom</div>
+            <div>Lun</div>
+            <div>Mar</div>
+            <div>Mié</div>
+            <div>Jue</div>
+            <div>Vie</div>
+            <div>Sáb</div>
+          </div>
+          <div class="Dias"></div>
+          <div class="elegirFechaYFechaActual">
+            <div class="elegirFecha">
+              <input type="text" placeholder="mm/yyyy" class="EntradaFecha" />
+              <button class="BtnEntradaFecha">
+                <ion-icon name="arrow-forward-circle-outline"></ion-icon>
+              </button>
+            </div>
+            <button class="BtnFechaActual">Hoy</button>
+          </div>
+        </div>
+      </div>
+      <div class="derecha">
+        <button class="BtnCerrarSesion">
+          <ion-icon name="people-outline"></ion-icon> cerrar sesión
+        </button>
+        <div class="Fecha-de-hoy">
+          <div class="eventoDia"></div>
+          <div class="FechaEvento"></div>
+        </div>
+        <div class="eventos"></div>
+        <div class="agregar-evento-wrapper">
+          <div class="agregar-evento-header">
+            <div class="titulo">Agregar evento</div>
+            <ion-icon name="close-circle-outline" class="cerrar"></ion-icon>
+          </div>
+          <div class="agregar-evento-cuerpo">
+            <div class="agregar-evento-inputs">
+              <select class="selector" name="selector" id="categorias">
+                <option value="ninguna" disabled selected>
+                  Selecciona una categoría
+                </option>
+                <option value="cumpleaños">🎂 Cumpleaños</option>
+                <option value="examen">📝 Examen</option>
+                <option value="deportes">🏅 Deportes</option>
+                <option value="trabajo">💼 Trabajo</option>
+                <option value="medico">🩺 Médico</option>
+                <option value="viaje">✈️ Viaje</option>
+                <option value="otro">📌 Otro</option>
+              </select>
+            </div>
+            <div class="agregar-evento-inputs">
+              <input
+                type="text "
+                placeholder="Nombre del evento"
+                class="evento-titulo"
+              />
+            </div>
+            <div class="agregar-evento-inputs">
+              <input
+                type="text "
+                placeholder="Hora del evento"
+                class="evento-hora"
+              />
+            </div>
+            <div class="agregar-evento-inputs">
+              <input
+                type="text "
+                placeholder="comentarios"
+                class="Comentarios-Eventos"
+              />
+            </div>
+            <button class="agregar-evento-btn">Agregar</button>
+          </div>
+        </div>
 
-                </div>
-            </div>
-        </div>
-        <div class="derecha">
-            <button class="BtnCerrarSesion"><ion-icon name="people-outline"></ion-icon> cerrar sesión</button>
-            <div class="Fecha-de-hoy">
-                <div class="eventoDia"></div>
-                <div class="FechaEvento"></div>
-            </div>
-            <div class="eventos">
-                
-            </div>
-            <div class="agregar-evento-wrapper">
-                <div class="agregar-evento-header">
-                    <div class="titulo">Agregar evento</div>
-                    <ion-icon name="close-circle-outline" class="cerrar"></ion-icon>
-                </div>
-                <div class="agregar-evento-cuerpo">
-                    <div class="agregar-evento-inputs">
-                        <select class= "selector" name="selector" id="categorias" placeholder="Elija la categoria">
-                            <option value="ninguna" disabled selected>Selecciona una categoria</option>
-                            <option value="cumpleaños">cumpleaños</option>
-                            <option value="examen">examen</option>
-                            <option value="deportes">deportes</option>
-                            <option value="medico">medico</option>
-                            <option value="viaje">viaje</option>
-                        </select>
-                    </div>
-                    <div class="agregar-evento-inputs">
-                        <input type="text " placeholder="Nombre del evento" class="evento-titulo">
-                    </div>
-                    <div class="agregar-evento-inputs">
-                        <input type="text " placeholder="Hora del evento" class="evento-hora">
-                    </div>
-                    <div class="agregar-evento-inputs">
-                        <input type="text " placeholder="comentarios" class="Comentarios-Eventos">
-                    </div>
-                     <button class="agregar-evento-btn">Agregar</button>
-               
-                </div>
-            </div>
-            
-            <button class="AgregarEventoBtn"><ion-icon name="add-circle-outline"></ion-icon></button>
-        </div>
+        <button class="AgregarEventoBtn">
+          <ion-icon name="add-circle-outline"></ion-icon>
+        </button>
+      </div>
     </div>
 
-
-
-
-    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-</body>
+    <script
+      type="module"
+      src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"
+    ></script>
+    <script
+      nomodule
+      src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"
+    ></script>
+  </body>
 </html>

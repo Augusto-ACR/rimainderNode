@@ -18,6 +18,10 @@ export const Event = new EntitySchema({
     category: { type: String, length: 30, nullable: true },
     description:{ type: String, length: 300, nullable: true },
     created_at: { type: 'timestamp', createDate: true },
+
+    remind1d: { type: 'boolean', default: false },
+    remind1h: { type: 'boolean', default: false },
+    remind30m: { type: 'boolean', default: false },
   },
   relations: {
     user: {

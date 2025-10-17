@@ -1,6 +1,5 @@
 // ./src/utils/telegramBot.js
 import express from 'express';
-import fetch from 'node-fetch';
 import { sendTelegramMessage } from './telegram.js';
 
 const router = express.Router();
@@ -31,6 +30,7 @@ router.post(`/bot${TELEGRAM_BOT_TOKEN}`, async (req, res) => {
           username: telegramUsername,
         });
 
+        // Usando fetch nativo de Node 20+
         const response = await fetch(`${API_BASE_URL}/auth/register-telegram`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

@@ -1,13 +1,21 @@
+// ./src/utils/telegramBot.js
 import express from 'express';
-import { envs } from '../configuration/envs.js';
+import fetch from 'node-fetch';
 import { sendTelegramMessage } from './telegram.js';
 
 const router = express.Router();
 
-router.post(`/bot${envs.TELEGRAM_BOT_TOKEN}`, async (req, res) => {
+// Leer variables de entorno
+const API_BASE_URL = process.env.API_BASE_URL;
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+
+// Webhook de Telegram
+router.post(`/bot${TELEGRAM_BOT_TOKEN}`, async (req, res) => {
   const body = req.body;
 
-  // Si es un mensaje con texto
+  // Logueamos todo lo que llega para depuración
+  console.log('Webhook received:', JSON.stringify(body, null, 2));
+
   if (body?.message?.text) {
     const msg = body.message;
     const chatId = msg.chat.id;
@@ -15,33 +23,47 @@ router.post(`/bot${envs.TELEGRAM_BOT_TOKEN}`, async (req, res) => {
 
     if (text === '/start') {
       try {
-        const response = await fetch(`${envs.API_BASE_URL}/api/register-telegram`, {
+        // Generar username si no existe
+        const telegramUsername = msg.from.username || `tg_${chatId}`;
+
+        console.log('Calling backend /register-telegram with:', {
+          telegram_id: chatId,
+          username: telegramUsername,
+        });
+
+        const response = await fetch(`${API_BASE_URL}/auth/register-telegram`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             telegram_id: chatId,
-            username: msg.from.username,
+            username: telegramUsername,
           }),
         });
+
         const data = await response.json();
 
-        if (response.status === 201) {
+        if (response.ok) {
           await sendTelegramMessage(
-            `✅ Hola ${data.username}!\nTu cuenta fue creada.\n\nUsuario: ${data.username}\nContraseña: ${data.password}`,
+            `✅ Hola ${data.username}!\nTu cuenta fue creada automáticamente.\n\nUsuario: ${data.username}\nContraseña: ${data.password}\n\nPodés iniciar sesión en el calendario.`,
             chatId
           );
         } else {
           await sendTelegramMessage(
-            `👋 Hola ${data.username || msg.from.username}!\nYa tenés una cuenta registrada.`,
+            `👋 Hola ${telegramUsername}!\nYa tenés una cuenta registrada.`,
             chatId
           );
         }
       } catch (err) {
-        await sendTelegramMessage(`⚠️ Error interno.`, chatId);
+        console.error('Error handling /start:', err);
+        await sendTelegramMessage(
+          `⚠️ Error interno. Por favor intentá nuevamente más tarde.`,
+          chatId
+        );
       }
     }
   }
 
+  // Siempre respondemos 200 a Telegram
   res.sendStatus(200);
 });
 

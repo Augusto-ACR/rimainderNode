@@ -1,3 +1,4 @@
+// ./src/module/user/entities/user.entity.js
 import { EntitySchema } from 'typeorm';
 
 export const User = new EntitySchema({

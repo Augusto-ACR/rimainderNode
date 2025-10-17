@@ -9,7 +9,7 @@ const repo = AppDatasource.getRepository(User);
 
 export const register = async (req = request, res = response) => {
   try {
-    const { username, password, chatId } = req.body; // <-- agrega chatId
+    const { username, password, chatId } = req.body; 
     if (!username || !password)
       return res.status(400).json({ message: 'usuario y contraseña son requeridos' });
 
@@ -20,7 +20,7 @@ export const register = async (req = request, res = response) => {
     const user = repo.create({
       username,
       password: passwordHash,
-      chat_id: chatId ? Number(chatId) : null // <-- guarda chat_id
+      chat_id: chatId ? Number(chatId) : null
     });
     await repo.save(user);
 
@@ -56,5 +56,45 @@ export const login = async (req = request, res = response) => {
     return res.json({ message: 'Login ok', user: safeUser, token });
   } catch (err) {
     return res.status(500).json({ message: 'Error en login', error: String(err) });
+  }
+};
+
+export const registerFromTelegram = async (req = request, res = response) => {
+  try {
+    const { telegram_id, username } = req.body;
+    if (!telegram_id) return res.status(400).json({ message: 'telegram_id requerido' });
+
+    const exists = await repo.findOne({ where: { chat_id: telegram_id } });
+    if (exists) {
+      return res.status(200).json({
+        message: 'Ya existe el usuario',
+        username: exists.username,
+      });
+    }
+
+    // Generar username y contraseña automáticos
+    const generatedUsername = username || `tg_${telegram_id}`;
+    const generatedPassword = Math.random().toString(36).slice(-8);
+
+    const passwordHash = await bcrypt.hash(generatedPassword, 12);
+
+    const user = repo.create({
+      username: generatedUsername,
+      password: passwordHash,
+      chat_id: telegram_id,
+    });
+
+    await repo.save(user);
+
+    return res.status(201).json({
+      message: 'Usuario creado desde Telegram',
+      username: generatedUsername,
+      password: generatedPassword,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: 'Error creando usuario desde Telegram',
+      error: String(err),
+    });
   }
 };

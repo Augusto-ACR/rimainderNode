@@ -3,6 +3,7 @@ import app from './app.js';
 import AppDatasource from './module/user/providers/datasource.provider.js';
 import pkg from 'signale';
 
+
 const { Signale } = pkg;
 
 const main = async () => {

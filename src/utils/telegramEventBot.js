@@ -20,16 +20,13 @@ const CATEGORY_EMOJI = {
   'otro': '📌',
 };
 
-const API_BASE_URL = process.env.API_BASE_URL;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
 // Webhook para mensajes de eventos
 router.post(`/bot${TELEGRAM_BOT_TOKEN}`, async (req, res) => {
   const body = req.body;
 
-  if (!body?.message?.text) {
-    return res.sendStatus(200);
-  }
+  if (!body?.message?.text) return res.sendStatus(200);
 
   const msg = body.message;
   const chatId = msg.chat.id;
@@ -38,11 +35,8 @@ router.post(`/bot${TELEGRAM_BOT_TOKEN}`, async (req, res) => {
   // Procesamos solo comandos /evento
   if (text.toLowerCase().startsWith('/evento')) {
     try {
-      // Eliminamos el comando y separamos por coma
       const args = text.replace('/evento', '').split(',').map(s => s.trim());
-
-      console.log(args);
-      
+      console.log('Args parseados:', args);
 
       if (args.length < 3) {
         await sendTelegramMessage(
@@ -66,7 +60,7 @@ router.post(`/bot${TELEGRAM_BOT_TOKEN}`, async (req, res) => {
       const description = descriptionRaw || null;
 
       // Obtenemos usuario
-      let user = await userRepo.findOne({ where: { chat_id: chatId } });
+      const user = await userRepo.findOne({ where: { chat_id: chatId } });
       if (!user) {
         await sendTelegramMessage(
           '⚠️ No se encontró tu usuario. Por favor envía /start primero para registrarte.',
@@ -100,7 +94,7 @@ router.post(`/bot${TELEGRAM_BOT_TOKEN}`, async (req, res) => {
         (description ? `• Descripción: ${description}\n` : '') +
         `• Categoría: ${category}`;
 
-      await sendTelegramMessage(mensaje, chatId, 'HTML');
+      await sendTelegramMessage(mensaje, chatId);
 
       return res.sendStatus(200);
     } catch (err) {

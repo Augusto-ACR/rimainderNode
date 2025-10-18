@@ -65,6 +65,10 @@ let FechaHoy = new Date();
 let activeDia;
 let mesActual = FechaHoy.getMonth();
 let anioActual = FechaHoy.getFullYear();
+let diaSeleccionado = null;
+let mesSeleccionado = null;
+let anioSeleccionado = null;
+
 
 const mesesDelAño = [
   "Enero","Febrero","Marzo","Abril","Mayo","Junio",
@@ -93,29 +97,40 @@ function CrearMes() {
   const Dia = primerDia.getDay();
   const sigueitedias = 7 - ultimoDia.getDay() - 1;
 
-  Fecha.innerHTML = mesesDelAño[mesActual] + " " + anioActual;
+  Fecha.innerHTML = `${mesesDelAño[mesActual]} ${anioActual}`;
   let dias = "";
 
   for (let i = Dia; i > 0; i--) {
-    dias += `<div class=" dia dia-previo"> ${DiasAnteriores - i + 1} </div>`;
+    dias += `<div class="dia dia-previo">${DiasAnteriores - i + 1}</div>`;
   }
 
   for (let x = 1; x <= UltimaFecha; x++) {
-    const esHoy = x === new Date().getDate() && anioActual===new Date().getFullYear() && mesActual === new Date().getMonth();
-    if (esHoy) {
-      SeleccionarDia(x);
-      dias += `<div class="dia acive hoy"> ${x} </div>`;
+    const esHoy =
+      x === new Date().getDate() &&
+      anioActual === new Date().getFullYear() &&
+      mesActual === new Date().getMonth();
+
+    const esDiaSeleccionado =
+      x === diaSeleccionado &&
+      mesActual === mesSeleccionado &&
+      anioActual === anioSeleccionado;
+
+    if (esDiaSeleccionado) {
+      dias += `<div class="dia active">${x}</div>`;
+    } else if (esHoy) {
+      dias += `<div class="dia hoy">${x}</div>`;
     } else {
-      dias += `<div class="dia"> ${x} </div>`;
+      dias += `<div class="dia">${x}</div>`;
     }
   }
 
   for (let j = 1; j <= sigueitedias; j++) {
-    dias += `<div class=" dia dia-siguiente"> ${j} </div>`;
+    dias += `<div class="dia dia-siguiente">${j}</div>`;
   }
 
   ContenedorDias.innerHTML = dias;
   MarcararDiaSeleccionado();
+  MarcarDiasConEventos();
 }
 
 // --- Marca los días que tienen eventos (si los hay) ---
@@ -183,13 +198,17 @@ izquierda?.addEventListener("click", MesAnterior);
 derecha?.addEventListener("click", MesSiguiente);
 
 btnFechaActual?.addEventListener("click", () => {
-  FechaHoy = new Date();
-  mesActual = FechaHoy.getMonth();
-  anioActual = FechaHoy.getFullYear();
+  const hoy = new Date();
+  FechaHoy = hoy;
+  mesActual = hoy.getMonth();
+  anioActual = hoy.getFullYear();
+  diaSeleccionado = hoy.getDate();
+  mesSeleccionado = mesActual;
+  anioSeleccionado = anioActual;
   CrearMes();
   cargarEventosMesSeguro();
+  SeleccionarYMarcarDia(diaSeleccionado);
 });
-
 EntradaFecha?.addEventListener("input", (e) => {
   EntradaFecha.value=EntradaFecha.value.replace(/ [^0-9/]/g, "");
   if (EntradaFecha.value.length === 2) EntradaFecha.value += "/";
@@ -264,49 +283,50 @@ function MostrarSiHoyEsVisible() {
   }
 }
 
-function MarcararDiaSeleccionado(){
+function MarcararDiaSeleccionado() {
   const dias = document.querySelectorAll(".dia");
   dias.forEach((dia) => {
     dia.addEventListener("click", async (e) => {
-      const number = Number(e.target.innerHTML.trim());
-      activeDia = number;
-      await mostarEventos(number);
-      SeleccionarDia(number);
-
-      dias.forEach((d) => d.classList.remove("acive"));
+      const number = Number(e.target.textContent.trim());
 
       if (e.target.classList.contains("dia-previo")) {
         MesAnterior();
-        setTimeout(() => {
-          const dias2 = document.querySelectorAll(".dia");
-          dias2.forEach((d) => {
-            if (!d.classList.contains("dia-previo") && Number(d.textContent.trim()) === number) {
-              d.classList.add("acive");
-            }
-          });
-        }, 100);
+        setTimeout(() => SeleccionarYMarcarDia(number), 100);
       } else if (e.target.classList.contains("dia-siguiente")) {
         MesSiguiente();
-        setTimeout(() => {
-          const dias2 = document.querySelectorAll(".dia");
-          dias2.forEach((d) => {
-            if (!d.classList.contains("dia-siguiente") && Number(d.textContent.trim()) === number) {
-              d.classList.add("acive");
-            }
-          });
-        }, 100);
+        setTimeout(() => SeleccionarYMarcarDia(number), 100);
       } else {
-        e.target.classList.add("acive");
+        SeleccionarYMarcarDia(number);
       }
     });
   });
 }
 
-function SeleccionarDia(FechaNum){
+
+function SeleccionarYMarcarDia(number) {
+  activeDia = number;
+  diaSeleccionado = number;
+  mesSeleccionado = mesActual;
+  anioSeleccionado = anioActual;
+  SeleccionarDia(number);
+
+  document.querySelectorAll(".dia").forEach((d) => d.classList.remove("active"));
+  const el = Array.from(document.querySelectorAll(".dia"))
+    .find((d) => Number(d.textContent.trim()) === number && !d.classList.contains("dia-previo") && !d.classList.contains("dia-siguiente"));
+  if (el) el.classList.add("active");
+
+  mostarEventos(number);
+}
+
+
+function SeleccionarDia(FechaNum) {
   const dia = new Date(anioActual, mesActual, FechaNum);
-  const NombreDia = dia.toLocaleDateString('es-ES', { weekday: 'long' });
+  diaSeleccionado = FechaNum;
+  mesSeleccionado = mesActual;
+  anioSeleccionado = anioActual;
+  const NombreDia = dia.toLocaleDateString("es-ES", { weekday: "long" });
   eventoDia.innerHTML = NombreDia;
-  FechaEvento.innerHTML = FechaNum + " " + mesesDelAño[mesActual] + " " + anioActual;
+  FechaEvento.innerHTML = `${FechaNum} ${mesesDelAño[mesActual]} ${anioActual}`;
 }
 
 

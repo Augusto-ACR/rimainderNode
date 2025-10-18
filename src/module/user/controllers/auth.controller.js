@@ -73,6 +73,7 @@ export const registerFromTelegram = async (req = request, res = response) => {
       // Usuario ya existe, devolvemos siempre password para el bot
       return res.status(200).json({
         message: 'Ya existe el usuario',
+        id: user.id,
         username: user.username,
         password: 'Ya creada',
       });
@@ -110,6 +111,7 @@ export const registerFromTelegram = async (req = request, res = response) => {
 
     return res.status(201).json({
       message: 'Usuario creado desde Telegram',
+      id: user.id,
       username: generatedUsername,
       password: generatedPassword,
     });

@@ -41,6 +41,9 @@ router.post(`/bot${TELEGRAM_BOT_TOKEN}`, async (req, res) => {
       // Eliminamos el comando y separamos por coma
       const args = text.replace('/evento', '').split(',').map(s => s.trim());
 
+      console.log(args);
+      
+
       if (args.length < 3) {
         await sendTelegramMessage(
           `⚠️ Formato inválido. Debe ser:\n` +

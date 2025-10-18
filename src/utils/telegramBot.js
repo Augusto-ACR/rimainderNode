@@ -4,7 +4,7 @@ import { sendTelegramMessage } from "./telegram.js";
 
 import AppDatasource from "../module/user/providers/datasource.provider.js";
 import { User } from "../module/user/entities/user.entity.js";
-import { Event } from "../module/event/entities/event.entity.js";
+import { Event } from "../module/user/entities/event.entity.js";
 
 const router = express.Router();
 

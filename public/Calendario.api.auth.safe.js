@@ -275,11 +275,11 @@ function MostrarSiHoyEsVisible() {
     activeDia = d;
     SeleccionarDia(d);
     mostarEventos(d);
-    // marcar .acive en el número de día correcto
+    // marcar .active en el número de día correcto
     const dias = ContenedorDias.querySelectorAll(".dia:not(.dia-previo):not(.dia-siguiente)");
-    dias.forEach(el => el.classList.remove("acive"));
+    dias.forEach(el => el.classList.remove("active"));
     const el = Array.from(dias).find(el => Number(el.textContent.trim()) === d);
-    if (el) el.classList.add("acive");
+    if (el) el.classList.add("active");
   }
 }
 
@@ -415,7 +415,7 @@ inputComentario.value = "";
     evento_hora.value = "";
     await mostarEventos(day);
 
-    const diaActivo = document.querySelector(".dia.acive");
+    const diaActivo = document.querySelector(".dia.active");
     if (diaActivo && !diaActivo.classList.contains("evento")) {
       diaActivo.classList.add("evento");
     }
@@ -455,7 +455,7 @@ contenedoreventos?.addEventListener("click", async (e) => {
     await mostarEventos(activeDia);
 
     // Limpiar clases si no hay eventos en el día
-    const activeDiaelemento = document.querySelector(".dia.acive");
+    const activeDiaelemento = document.querySelector(".dia.active");
     if (activeDiaelemento && (!eventosMes[activeDia] || eventosMes[activeDia].length === 0)) {
       activeDiaelemento.classList.remove("evento");
     }

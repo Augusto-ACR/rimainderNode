@@ -136,20 +136,18 @@ router.post(`/bot${TELEGRAM_BOT_TOKEN}`, async (req, res) => {
 const WEBAPP_URL = "https://rimaindernode.onrender.com/form-evento.html";
 
 if (text?.toLowerCase() === "/crear") {
-  await sendTelegramMessage(
-    "📝 Tocá el botón de abajo para crear un nuevo evento:",
-    chatId,
-    undefined,
-    {
-      reply_markup: {
-        keyboard: [
-          [{ text: "🗓️ Crear evento", web_app: { url: WEBAPP_URL } }],
-        ],
-        resize_keyboard: true,
-        one_time_keyboard: false,
-      },
-    }
-  );
+await sendTelegramMessage(
+  "📝 Tocá el botón de abajo para crear un nuevo evento:",
+  chatId,
+  undefined,
+  {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: "🗓️ Crear evento", web_app: { url: WEBAPP_URL } }],
+      ],
+    },
+  }
+);
   return res.sendStatus(200);
 }
 

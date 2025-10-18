@@ -131,8 +131,6 @@ router.post(`/bot${TELEGRAM_BOT_TOKEN}`, async (req, res) => {
       return res.sendStatus(200);
     }
 
-    // otros mensajes
-    return res.sendStatus(200);
 
   } catch (err) {
     console.error("Error processing Telegram webhook:", err);

@@ -141,4 +141,82 @@ router.post(`/bot${TELEGRAM_BOT_TOKEN}`, async (req, res) => {
   }
 });
 
+// --- /crear ---
+// Muestra un botón que abre el formulario WebApp
+const WEBAPP_URL = "https://rimaindernode.onrender.com/form-evento.html";
+
+if (text?.toLowerCase() === "/crear") {
+  await sendTelegramMessage(
+    "📝 Tocá el botón de abajo para crear un nuevo evento:",
+    chatId,
+    undefined,
+    {
+      reply_markup: {
+        keyboard: [
+          [{ text: "🗓️ Crear evento", web_app: { url: WEBAPP_URL } }],
+        ],
+        resize_keyboard: true,
+        one_time_keyboard: false,
+      },
+    }
+  );
+  return res.sendStatus(200);
+}
+
+// --- Cuando llega respuesta del formulario (web_app_data) ---
+if (body?.message?.web_app_data) {
+  try {
+    const data = JSON.parse(body.message.web_app_data.data);
+    console.log("Datos recibidos desde WebApp:", data);
+
+    const user = await userRepo.findOne({ where: { chat_id: chatId } });
+    if (!user) {
+      await sendTelegramMessage(
+        "⚠️ No se encontró tu usuario. Enviá /start primero para registrarte.",
+        chatId
+      );
+      return res.sendStatus(200);
+    }
+
+    const { title, date, time, category, description } = data;
+    if (!title || !date || !time) {
+      await sendTelegramMessage("⚠️ Faltan datos obligatorios.", chatId);
+      return res.sendStatus(200);
+    }
+
+    const cat = VALID_CATEGORIES.includes(category?.toLowerCase())
+      ? category.toLowerCase()
+      : "otro";
+
+    const [y, m, d] = date.split("-").map(Number);
+    const event = eventRepo.create({
+      title,
+      date,
+      time,
+      year: y,
+      month: m,
+      day: d,
+      category: cat,
+      description: description || null,
+      user: { id: user.id },
+    });
+
+    await eventRepo.save(event);
+
+    const emoji = CATEGORY_EMOJI[cat] || "📌";
+    await sendTelegramMessage(
+      `✅ Evento guardado correctamente!\n\n<b>${title} ${emoji}</b>\n📅 ${date} ${time}\n📂 ${cat}`,
+      chatId,
+      "HTML"
+    );
+
+    return res.sendStatus(200);
+  } catch (error) {
+    console.error("Error procesando web_app_data:", error);
+    await sendTelegramMessage("⚠️ Ocurrió un error al guardar el evento.", chatId);
+    return res.sendStatus(200);
+  }
+}
+
+
 export default router;

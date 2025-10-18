@@ -128,14 +128,14 @@ body {
    font-size: 1rem;
 }
 
-.calendario .Dias .acive {
+.calendario .Dias .active {
     position: relative;
     font-size: 2rem;
     color: white;
     background-color: #576ac9;
 }
 
-.calendario .Dias .acive::before {
+.calendario .Dias .active::before {
     content: "";
     position: absolute;
     top: 0;
@@ -167,12 +167,12 @@ body {
     background-color: white;
 }
 
-.calendario .acive.evento::after {
+.calendario .active.evento::after {
     background-color: white;
     bottom: 20%;
 }
 
-.calendario .acive.evento{
+.calendario .active.evento{
     padding-bottom: 10px;
 }
 
@@ -574,7 +574,7 @@ transform: translateY(-50%);
         height: 40px;
         font-size: 0.8rem;
     }
-    .calendario .Dias .dia.acive,
+    .calendario .Dias .dia.active,
     .calendario .Dias .dia.hoy{
         font-size: 1rem;
     }

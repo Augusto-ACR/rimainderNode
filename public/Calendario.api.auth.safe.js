@@ -73,6 +73,16 @@ const mesesDelAño = [
 
 let eventosMes = {};
 
+const CATEGORY_EMOJI = {
+  'cumpleaños': '🎂',
+  'examen': '📝',
+  'deportes': '🏅',
+  'trabajo': '💼',
+  'medico': '🩺',
+  'viaje': '✈️',
+  'otro': '📌',
+};
+
 // --- Render DÍAS (sin tocar API) ---
 function CrearMes() {
   const primerDia = new Date(anioActual, mesActual, 1);
@@ -299,13 +309,16 @@ function SeleccionarDia(FechaNum){
   FechaEvento.innerHTML = FechaNum + " " + mesesDelAño[mesActual] + " " + anioActual;
 }
 
+
+
 async function mostarEventos(FechaNum){
+    const selectCategoria = document.getElementById("categorias");
   const list = eventosMes[Number(FechaNum)] || [];
   let eventos = "";
   list.forEach((ev) => {
     eventos += `<div class="evento" data-id="${ev.id}">
       <div class="evento-titulo">
-        <ion-icon name="alert-circle-outline"></ion-icon>
+        <div class="evento-categoria-emoji">${CATEGORY_EMOJI[ev.categoria] || '📌'}</div>
         <div class="TituloEvento">${ev.titulo}</div>
       </div>
       <div class="evento-hora">${ev.hora}</div>

@@ -6,7 +6,7 @@ import authRoutes from './module/user/routes/auth.route.js';
 import userRoutes from './module/user/routes/user.route.js';
 import eventRoutes from './module/user/routes/event.route.js';
 import telegramBot from './utils/telegramBot.js'; 
-import telegramEventBot from './utils/telegramEventBot.js';
+
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -32,7 +32,7 @@ app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
 app.use('/events', eventRoutes);
 app.use(telegramBot)
-app.use(telegramEventBot);
+
 
 app.get('/', (_req, res) => res.send('OK'));
 

@@ -1,7 +1,7 @@
 // ./src/utils/telegramEventBot.js
 import express from 'express';
 import AppDatasource from '../module/user/providers/datasource.provider.js';
-import { Event } from '../module/event/entities/event.entity.js';
+import { Event } from '../module/user/entities/event.entity.js';
 import { User } from '../module/user/entities/user.entity.js';
 import { sendTelegramMessage } from './telegram.js';
 

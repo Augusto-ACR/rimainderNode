@@ -62,28 +62,50 @@ export const login = async (req = request, res = response) => {
 export const registerFromTelegram = async (req = request, res = response) => {
   try {
     const { telegram_id, username } = req.body;
-    if (!telegram_id) return res.status(400).json({ message: 'telegram_id requerido' });
+    if (!telegram_id || typeof telegram_id !== 'number') {
+      return res.status(400).json({ message: 'telegram_id inválido' });
+    }
 
-    const exists = await repo.findOne({ where: { chat_id: telegram_id } });
-    if (exists) {
+    // Buscar usuario por chat_id
+    let user = await repo.findOne({ where: { chat_id: telegram_id } });
+
+    if (user) {
+      // Usuario ya existe, devolvemos siempre password para el bot
       return res.status(200).json({
         message: 'Ya existe el usuario',
-        username: exists.username,
+        username: user.username,
+        password: 'Ya creada',
       });
     }
 
-    // Generar username y contraseña automáticos
-    const generatedUsername = username || `tg_${telegram_id}`;
-    const generatedPassword = Math.random().toString(36).slice(-8);
+    // Generar username si no existe
+    let generatedUsername = username || `tg_${telegram_id}`;
+
+    // Evitar conflicto con username existente
+    const existsUsername = await repo.findOne({ where: { username: generatedUsername } });
+    if (existsUsername) {
+      generatedUsername = `${generatedUsername}_${Math.floor(Math.random() * 1000)}`;
+    }
+
+    // Generar contraseña aleatoria
+    const generatePassword = (length = 10) => {
+      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let password = '';
+      for (let i = 0; i < length; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return password;
+    };
+    const generatedPassword = generatePassword();
 
     const passwordHash = await bcrypt.hash(generatedPassword, 12);
 
-    const user = repo.create({
+    // Crear usuario en DB
+    user = repo.create({
       username: generatedUsername,
       password: passwordHash,
       chat_id: telegram_id,
     });
-
     await repo.save(user);
 
     return res.status(201).json({
@@ -92,6 +114,7 @@ export const registerFromTelegram = async (req = request, res = response) => {
       password: generatedPassword,
     });
   } catch (err) {
+    console.error('Error registerFromTelegram:', err);
     return res.status(500).json({
       message: 'Error creando usuario desde Telegram',
       error: String(err),

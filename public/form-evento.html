@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nuevo evento</title>
+
+  <!-- SDK de Telegram para WebApps -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <h2>📝 Crear nuevo evento</h2>
+
+  <form id="form">
+    <label>Título:</label><br>
+    <input type="text" name="title" required><br><br>
+
+    <label>Fecha:</label><br>
+    <input type="date" name="date" required><br><br>
+
+    <label>Hora:</label><br>
+    <input type="time" name="time" required><br><br>
+
+    <label>Categoría:</label><br>
+    <select name="category">
+      <option value="cumpleaños">Cumpleaños 🎂</option>
+      <option value="examen">Examen 📝</option>
+      <option value="deportes">Deportes 🏅</option>
+      <option value="trabajo">Trabajo 💼</option>
+      <option value="medico">Médico 🩺</option>
+      <option value="viaje">Viaje ✈️</option>
+      <option value="otro">Otro 📌</option>
+    </select><br><br>
+
+    <label>Descripción (opcional):</label><br>
+    <textarea name="description" rows="3"></textarea><br><br>
+
+    <button type="submit">Enviar</button>
+  </form>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand(); // hace que la app use toda la pantalla
+
+    const form = document.getElementById("form");
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+
+      // convertir los datos del formulario en un objeto
+      const data = Object.fromEntries(new FormData(form));
+      
+      // enviar los datos al bot
+      tg.sendData(JSON.stringify(data));
+      
+      // cerrar la mini app
+      tg.close();
+    });
+  </script>
+</body>
+</html>

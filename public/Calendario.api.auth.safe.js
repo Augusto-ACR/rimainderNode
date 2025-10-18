@@ -167,7 +167,7 @@ async function cargarEventosMesSeguro() {
       return;
     }
 
-    const resp = await fetch(`${API_BASE}/eventos?desde=${desde}&hasta=${hasta}`, {
+    const resp = await fetch(`${API_BASE}/events?desde=${desde}&hasta=${hasta}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
 

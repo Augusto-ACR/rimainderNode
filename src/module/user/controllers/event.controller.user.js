@@ -21,46 +21,20 @@ const CATEGORY_EMOJI = {
 };
 
 // GET /events?year=YYYY&month=MM  -> eventos del mes DEL USUARIO
-// GET /events?year=YYYY&month=MM
-// o bien /events?desde=YYYY-MM-DD&hasta=YYYY-MM-DD
 export const listByMonth = async (req = request, res = response) => {
   try {
+    const year = Number(req.query.year);
+    const month = Number(req.query.month);
+    if (!year || !month) return res.status(400).json({ message: 'year y month son requeridos' });
     if (!req.user?.id) return res.status(401).json({ message: 'No autenticado' });
 
-    const { year, month, desde, hasta } = req.query;
-
-    let events = [];
-
-    if (desde && hasta) {
-      // --- Nuevo modo: rango de fechas ---
-      const start = new Date(desde);
-      const end = new Date(hasta);
-
-      events = await repo
-        .createQueryBuilder("event")
-        .leftJoinAndSelect("event.user", "user")
-        .where("user.id = :userId", { userId: req.user.id })
-        .andWhere("event.date BETWEEN :desde AND :hasta", { desde: start, hasta: end })
-        .orderBy("event.date", "ASC")
-        .addOrderBy("event.time", "ASC")
-        .getMany();
-
-    } else if (year && month) {
-      // --- Modo anterior (compatibilidad) ---
-      const y = Number(year);
-      const m = Number(month);
-      events = await repo.find({
-        where: { year: y, month: m, user: { id: req.user.id } },
-        order: { day: "ASC", time: "ASC" },
-      });
-    } else {
-      return res.status(400).json({ message: "Parámetros inválidos: se requiere (year & month) o (desde & hasta)" });
-    }
-
+    const events = await repo.find({
+      where: { year, month, user: { id: req.user.id } },
+      order: { day: 'ASC', time: 'ASC' }
+    });
     return res.json({ events });
   } catch (err) {
-    console.error("Error listando eventos:", err);
-    return res.status(500).json({ message: "Error listando eventos", error: String(err) });
+    return res.status(500).json({ message: 'Error listando eventos', error: String(err) });
   }
 };
 

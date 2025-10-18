@@ -131,15 +131,7 @@ router.post(`/bot${TELEGRAM_BOT_TOKEN}`, async (req, res) => {
       return res.sendStatus(200);
     }
 
-
-  } catch (err) {
-    console.error("Error processing Telegram webhook:", err);
-    await sendTelegramMessage(`⚠️ Error: ${err.message}`, chatId);
-    return res.sendStatus(200);
-  }
-});
-
-// --- /crear ---
+    // --- /crear ---
 // Muestra un botón que abre el formulario WebApp
 const WEBAPP_URL = "https://rimaindernode.onrender.com/form-evento.html";
 
@@ -215,6 +207,15 @@ if (body?.message?.web_app_data) {
     return res.sendStatus(200);
   }
 }
+
+
+  } catch (err) {
+    console.error("Error processing Telegram webhook:", err);
+    await sendTelegramMessage(`⚠️ Error: ${err.message}`, chatId);
+    return res.sendStatus(200);
+  }
+});
+
 
 
 export default router;

@@ -146,32 +146,47 @@ function MarcarDiasConEventos() {
 // --- Carga eventos del mes desde la API (seguro) ---
 async function cargarEventosMesSeguro() {
   try {
-    if (!getToken()) {
-      // Si no hay token, renderizamos grid y mandamos al login
-      MarcarDiasConEventos(); // no hay eventos
-      setTimeout(() => (window.location.href = "index.html"), 50);
+    // Fecha de inicio: lunes de la primera semana mostrada
+    const primerDia = new Date(anioActual, mesActual, 1);
+    const diaSemana = primerDia.getDay(); // 0 domingo, 1 lunes, etc.
+    const inicio = new Date(primerDia);
+    inicio.setDate(primerDia.getDate() - diaSemana);
+
+    // Fecha de fin: domingo de la última semana mostrada
+    const ultimoDia = new Date(anioActual, mesActual + 1, 0);
+    const fin = new Date(ultimoDia);
+    const faltantes = 6 - ultimoDia.getDay();
+    fin.setDate(ultimoDia.getDate() + faltantes);
+
+    const desde = inicio.toISOString().split("T")[0];
+    const hasta = fin.toISOString().split("T")[0];
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.warn("No hay token, no se pueden cargar eventos");
       return;
     }
-    const { events } = await apiGET(`${EVENTS_URL}?year=${anioActual}&month=${mesActual+1}`);
-    eventosMes = {};
-    for (const ev of events) {
-      const d = ev.day;
-      if (!eventosMes[d]) eventosMes[d] = [];
-      eventosMes[d].push({ id: ev.id, titulo: ev.title, hora: ev.time });
+
+    const resp = await fetch(`${API_BASE}/eventos?desde=${desde}&hasta=${hasta}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (resp.status === 401) {
+      localStorage.removeItem("token");
+      window.location.href = "/login.html";
+      return;
     }
+
+    const data = await resp.json();
+    eventos = data || [];
+
     MarcarDiasConEventos();
-    MostrarSiHoyEsVisible();
-    if (activeDia) mostarEventos(activeDia);
+    if (diaSeleccionado) mostarEventos(diaSeleccionado);
   } catch (err) {
-    // 401 -> login
-    if (err.status === 401) {
-      setTimeout(() => (window.location.href = "index.html"), 50);
-      return;
-    }
-    console.warn("No se pudieron cargar eventos:", err.message);
-    // Dejar renderizada la grilla aunque la API falle
+    console.error("Error al cargar eventos:", err);
   }
 }
+
 
 // --- Navegación de meses ---
 function MesAnterior() {

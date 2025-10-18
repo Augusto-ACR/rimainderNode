@@ -325,7 +325,7 @@ contenedoreventos.addEventListener("click", async (e) => {
 // Cerrar sesión: elimina token y vuelve al login
 BtnCerrarSesion.addEventListener("click", () => {
   localStorage.removeItem("token");
-  window.location.href = "Regishtml.html";
+  window.location.href = "index.html";
 });
 
 // Start

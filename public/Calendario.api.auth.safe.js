@@ -124,7 +124,7 @@ async function cargarEventosMesSeguro() {
     if (!getToken()) {
       // Si no hay token, renderizamos grid y mandamos al login
       MarcarDiasConEventos(); // no hay eventos
-      setTimeout(() => (window.location.href = "Regishtml.html"), 50);
+      setTimeout(() => (window.location.href = "index.html"), 50);
       return;
     }
     const { events } = await apiGET(`${EVENTS_URL}?year=${anioActual}&month=${mesActual+1}`);
@@ -140,7 +140,7 @@ async function cargarEventosMesSeguro() {
   } catch (err) {
     // 401 -> login
     if (err.status === 401) {
-      setTimeout(() => (window.location.href = "Regishtml.html"), 50);
+      setTimeout(() => (window.location.href = "index.html"), 50);
       return;
     }
     console.warn("No se pudieron cargar eventos:", err.message);
@@ -390,7 +390,7 @@ inputComentario.value = "";
     if (err.status === 401) {
       alert("Sesión expirada. Volvé a iniciar sesión.");
       localStorage.removeItem("token");
-      window.location.href = "Regishtml.html";
+      window.location.href = "index.html";
       return;
     }
     alert("Error creando evento: " + err.message);
@@ -431,7 +431,7 @@ contenedoreventos?.addEventListener("click", async (e) => {
     if (err.status === 401) {
       alert("Sesión expirada. Volvé a iniciar sesión.");
       localStorage.removeItem("token");
-      window.location.href = "Regishtml.html";
+      window.location.href = "index.html";
       return;
     }
     alert("Error eliminando evento: " + err.message);

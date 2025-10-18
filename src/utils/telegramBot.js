@@ -4,7 +4,7 @@ import { sendTelegramMessage } from './telegram.js';
 
 const router = express.Router();
 
-// Leer variables de entorno
+// Variables de entorno
 const API_BASE_URL = process.env.API_BASE_URL;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
@@ -12,7 +12,6 @@ const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 router.post(`/bot${TELEGRAM_BOT_TOKEN}`, async (req, res) => {
   const body = req.body;
 
-  // Logueamos todo lo que llega para depuración
   console.log('Webhook received:', JSON.stringify(body, null, 2));
 
   if (body?.message?.text) {
@@ -22,7 +21,6 @@ router.post(`/bot${TELEGRAM_BOT_TOKEN}`, async (req, res) => {
 
     if (text === '/start') {
       try {
-        // Generar username si no existe
         const telegramUsername = msg.from.username || `tg_${chatId}`;
 
         console.log('Calling backend /register-telegram with:', {
@@ -30,7 +28,6 @@ router.post(`/bot${TELEGRAM_BOT_TOKEN}`, async (req, res) => {
           username: telegramUsername,
         });
 
-        // Usando fetch nativo de Node 20+
         const response = await fetch(`${API_BASE_URL}/auth/register-telegram`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -42,14 +39,19 @@ router.post(`/bot${TELEGRAM_BOT_TOKEN}`, async (req, res) => {
 
         const data = await response.json();
 
-        if (response.ok) {
+        if (!response.ok) {
+          throw new Error(data.message || 'Error en backend');
+        }
+
+        // Mensajes según si la cuenta es nueva o ya existente
+        if (data.password && data.password !== 'Ya creada') {
           await sendTelegramMessage(
             `✅ Hola ${data.username}!\nTu cuenta fue creada automáticamente.\n\nUsuario: ${data.username}\nContraseña: ${data.password}\n\nPodés iniciar sesión en el calendario.`,
             chatId
           );
         } else {
           await sendTelegramMessage(
-            `👋 Hola ${telegramUsername}!\nYa tenés una cuenta registrada.`,
+            `👋 Hola ${data.username}!\nYa tenés una cuenta registrada.\nSi olvidaste tu contraseña, podés recuperarla desde la web.`,
             chatId
           );
         }
@@ -63,7 +65,6 @@ router.post(`/bot${TELEGRAM_BOT_TOKEN}`, async (req, res) => {
     }
   }
 
-  // Siempre respondemos 200 a Telegram
   res.sendStatus(200);
 });
 

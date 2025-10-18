@@ -191,7 +191,7 @@ body {
 .calendario .elegirFechaYFechaActual .elegirFecha{
     display: flex;
     align-items: center;
-    border-radius: 10px;
+    border-radius: 12px;
     overflow: hidden;
     border: 1px solid #576ac9;
     background-color: white;
@@ -226,6 +226,12 @@ body {
 
 }
 
+.calendario .elegirFechaYFechaActual .BtnEntradaFecha iomn-icon{
+    padding-top: 4.2px;
+    background-color: white;
+
+}
+
 .ContenedorPrincipal .derecha {
     position: relative;
     width: 40%;
@@ -235,14 +241,11 @@ body {
 .derecha .Fecha-de-hoy {
     width: 100%;
     height: 50px;
-    display: flex;
-    flex-wrap: wrap;
     gap: 10px;
     align-items: center;
-    justify-content: space-between;
     padding: 0 40px;
     padding-left:  50px;
-    margin-top: 50px;
+    margin-top: 9px;
     margin-bottom: 20px;
     text-transform: capitalize;
 }
@@ -286,11 +289,12 @@ body {
 }
 
 .eventos .evento:nth-child(even) {
-    background: transparent;
+    background: linear-gradient(90deg, #94A6FF, transparent);
 }
 
 .eventos .evento:hover {
     background: linear-gradient(90deg,#576ac9 , transparent);
+    ;
 }
 
 .eventos .evento .evento-titulo {
@@ -458,15 +462,15 @@ transform: translateY(-50%);
     outline: none;
     border: none;
     border-radius: 5px;
-    background-color: #576ac9;
+    background-color: #94A6FF;
     color: white;
     cursor: pointer;
     padding: 5px 10px;
 }
 
 .agregar-evento-btn:hover {
-    background-color: white;
-    color: #576ac9;
+    background-color: #576ac9;
+    color: white;
 }
 
 .AgregarEventoBtn{
@@ -581,8 +585,8 @@ transform: translateY(-50%);
 
 .BtnCerrarSesion{
     position: absolute;
-    top: 30px;
-    left: 45px;
+    top: 35px;
+    right: 45px;
     display: flex;
     align-items: center;
     justify-content: center;

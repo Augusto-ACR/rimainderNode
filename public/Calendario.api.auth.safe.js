@@ -85,6 +85,8 @@ const evento_titulo = document.querySelector(".evento-titulo");
 const evento_hora = document.querySelector(".evento-hora");
 const inputComentario = document.querySelector(".Comentarios-Eventos");
 
+
+
 let FechaHoy = new Date();
 let activeDia;
 let mesActual = FechaHoy.getMonth();
@@ -107,6 +109,34 @@ const CATEGORY_EMOJI = {
   'viaje': '✈️',
   'otro': '📌',
 };
+
+evento_hora?.addEventListener("input", (e) => {
+  let valor = e.target.value.replace(/[^0-9]/g, ""); // Solo números
+  
+  // Limitar a 4 dígitos
+  if (valor.length > 4) {
+    valor = valor.slice(0, 4);
+  }
+  
+  // Agregar ":" después de los primeros 2 dígitos
+  if (valor.length >= 2) {
+    const horas = valor.slice(0, 2);
+    const minutos = valor.slice(2);
+    
+    // Validar horas y minutos
+    if (Number(horas) > 23) {
+      valor = "23" + minutos;
+    }
+    if (minutos.length > 0 && Number(minutos) > 59) {
+      valor = horas + "59";
+    }
+    
+    valor = horas + ":" + minutos;
+  }
+  
+  e.target.value = valor;
+});
+
 
 // --- Render DÍAS ---
 function CrearMes() {

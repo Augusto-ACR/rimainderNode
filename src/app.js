@@ -1,6 +1,7 @@
 // src/app.js
 import express from 'express';
 import dotenv from 'dotenv';
+import cors from 'cors';
 
 import authRoutes from './module/user/routes/auth.route.js';
 import userRoutes from './module/user/routes/user.route.js';
@@ -17,6 +18,11 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+app.use(cors({
+  origin: '*', // En producción, especifica los dominios permitidos
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 app.use(express.static(path.join(__dirname, '..', 'public')));
 

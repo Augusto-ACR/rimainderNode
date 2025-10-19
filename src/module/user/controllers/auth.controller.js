@@ -66,23 +66,30 @@ export const registerFromTelegram = async (req = request, res = response) => {
       return res.status(400).json({ message: 'telegram_id inválido' });
     }
 
+    const secret = process.env.JWT_SECRET || 'dev_secret_change_me';
+
     // Buscar usuario por chat_id
     let user = await repo.findOne({ where: { chat_id: telegram_id } });
 
     if (user) {
-      // Usuario ya existe, devolvemos siempre password para el bot
+      // Usuario ya existe -> generamos JWT
+      const token = jwt.sign(
+        { id: user.id, username: user.username, role: user.role },
+        secret,
+        { expiresIn: '7d' }
+      );
+
       return res.status(200).json({
         message: 'Ya existe el usuario',
         id: user.id,
         username: user.username,
         password: 'Ya creada',
+        token,
       });
     }
 
     // Generar username si no existe
     let generatedUsername = username || `tg_${telegram_id}`;
-
-    // Evitar conflicto con username existente
     const existsUsername = await repo.findOne({ where: { username: generatedUsername } });
     if (existsUsername) {
       generatedUsername = `${generatedUsername}_${Math.floor(Math.random() * 1000)}`;
@@ -98,7 +105,6 @@ export const registerFromTelegram = async (req = request, res = response) => {
       return password;
     };
     const generatedPassword = generatePassword();
-
     const passwordHash = await bcrypt.hash(generatedPassword, 12);
 
     // Crear usuario en DB
@@ -109,11 +115,19 @@ export const registerFromTelegram = async (req = request, res = response) => {
     });
     await repo.save(user);
 
+    // Generar JWT
+    const token = jwt.sign(
+      { id: user.id, username: user.username, role: user.role },
+      secret,
+      { expiresIn: '7d' }
+    );
+
     return res.status(201).json({
       message: 'Usuario creado desde Telegram',
       id: user.id,
       username: generatedUsername,
       password: generatedPassword,
+      token,
     });
   } catch (err) {
     console.error('Error registerFromTelegram:', err);

@@ -7,10 +7,7 @@
   <style>
     body { font-family: sans-serif; background: #f8f9fa; padding: 20px; }
     form { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    input, select, textarea, button {
-      width: 100%; padding: 10px; margin-bottom: 12px;
-      border-radius: 8px; border: 1px solid #ccc; font-size: 16px;
-    }
+    input, select, textarea, button { width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
     button { background: #4caf50; color: white; border: none; cursor: pointer; }
     button:hover { background: #43a047; }
   </style>
@@ -35,64 +32,85 @@
   </form>
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script>
-  // --- Inicio logs ---
-  console.log("📌 WebApp cargada");
+  <script>
+    const tg = window.Telegram.WebApp;
+    const API_BASE = window.location.origin; // mismo dominio
+    const EVENTS_URL = `${API_BASE}/events`;
+    const AUTH_URL = `${API_BASE}/auth/registerFromTelegram`;
 
-  const tg = window.Telegram.WebApp;
-
-  console.log("📌 Objeto Telegram WebApp:", tg);
-  console.log("📌 initData:", tg.initData);
-  console.log("📌 initDataUnsafe:", tg.initDataUnsafe);
-
-  if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-    console.log("📌 Usuario detectado:", tg.initDataUnsafe.user);
-  } else {
-    console.warn("⚠️ No se detectó usuario de Telegram. No se puede iniciar sesión automáticamente.");
-  }
-
-  // --- Expande WebApp ---
-  tg.expand();
-  console.log("📌 WebApp expandida");
-
-  tg.MainButton.setText("Enviar");
-  console.log("📌 MainButton configurado");
-
-  // --- Formulario ---
-  const form = document.getElementById("eventoForm");
-
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
-    console.log("📌 Submit formulario detectado");
-
-    const data = {
-      title: document.getElementById("title").value,
-      date: document.getElementById("date").value,
-      time: document.getElementById("time").value,
-      category: document.getElementById("category").value,
-      description: document.getElementById("description").value,
-    };
-
-    console.log("📌 Datos a enviar:", data);
-
-    try {
-      tg.sendData(JSON.stringify(data));
-      console.log("📌 Datos enviados a Telegram con sendData()");
-      tg.close();
-      console.log("📌 WebApp cerrada");
-    } catch (err) {
-      console.error("❌ Error enviando datos:", err);
-      alert("Error enviando datos al bot: " + err.message);
+    // --- Manejo de token ---
+    function getToken() {
+      return localStorage.getItem("token");
     }
-  });
+    function setToken(token) {
+      localStorage.setItem("token", token);
+    }
+    function authHeaders() {
+      const t = getToken();
+      return t ? { Authorization: `Bearer ${t}` } : {};
+    }
 
-  // --- Log MainButton click manual ---
-  tg.MainButton.onClick(() => {
-    console.log("📌 MainButton click detectado");
-  });
+    async function apiJSON(url, method, body) {
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.message || "Error de red");
+      return data;
+    }
 
-  console.log("📌 Script inicializado correctamente");
-</script>
+    // --- Registro automático desde Telegram ---
+    async function initUser() {
+      try {
+        if (!getToken()) {
+          // Telegram WebApp pasa el chat_id
+          const chatId = tg.initDataUnsafe?.user?.id;
+          if (!chatId) throw new Error("No se pudo obtener Telegram ID");
+
+          const res = await fetch(AUTH_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ telegram_id: chatId })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || "Error registrando usuario");
+
+          if (data.token) setToken(data.token);
+        }
+        console.log("Usuario listo, token:", getToken());
+      } catch (err) {
+        alert("No se pudo iniciar sesión automáticamente. Intentá más tarde.");
+        console.error("Error initUser:", err);
+      }
+    }
+
+    // --- Evento submit ---
+    const form = document.getElementById("eventoForm");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const payload = {
+        title: document.getElementById("title").value.trim(),
+        date: document.getElementById("date").value,
+        time: document.getElementById("time").value,
+        category: document.getElementById("category").value,
+        description: document.getElementById("description").value.trim()
+      };
+
+      try {
+        await apiJSON(EVENTS_URL, "POST", payload);
+        alert("Evento guardado correctamente ✅");
+        tg.close(); // cerrar WebApp
+      } catch (err) {
+        console.error("Error al guardar evento:", err);
+        alert("Error al guardar evento: " + err.message);
+      }
+    });
+
+    // --- Inicializar ---
+    initUser();
+    tg.expand();
+  </script>
 </body>
 </html>

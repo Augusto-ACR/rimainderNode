@@ -35,107 +35,64 @@
   </form>
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script>
-    const tg = window.Telegram.WebApp;
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+  // --- Inicio logs ---
+  console.log("📌 WebApp cargada");
 
-    // --- API base: mismo servidor ---
-    const API_BASE = ""; // mismo dominio
-    const REGISTER_TG_URL = `${API_BASE}/auth/registerFromTelegram`;
-    const EVENTS_URL = `${API_BASE}/events`;
+  const tg = window.Telegram.WebApp;
 
-    let JWT_TOKEN = null;
+  console.log("📌 Objeto Telegram WebApp:", tg);
+  console.log("📌 initData:", tg.initData);
+  console.log("📌 initDataUnsafe:", tg.initDataUnsafe);
 
-    async function registerUserTelegram() {
-      try {
-        const chatId = tg.initDataUnsafe?.user?.id; // Telegram user ID
-        const username = tg.initDataUnsafe?.user?.username || null;
-        if (!chatId) {
-          console.log("No hay chatId disponible en initDataUnsafe");
-          return false;
-        }
+  if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+    console.log("📌 Usuario detectado:", tg.initDataUnsafe.user);
+  } else {
+    console.warn("⚠️ No se detectó usuario de Telegram. No se puede iniciar sesión automáticamente.");
+  }
 
-        console.log("Registrando usuario Telegram...", chatId, username);
+  // --- Expande WebApp ---
+  tg.expand();
+  console.log("📌 WebApp expandida");
 
-        const res = await fetch(REGISTER_TG_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ telegram_id: chatId, username })
-        });
+  tg.MainButton.setText("Enviar");
+  console.log("📌 MainButton configurado");
 
-        const data = await res.json();
-        console.log("Respuesta registro Telegram:", data);
+  // --- Formulario ---
+  const form = document.getElementById("eventoForm");
 
-        if (res.ok) {
-          // Guardamos token en memoria
-          JWT_TOKEN = data.token;
-          return true;
-        } else {
-          console.error("Error registrando usuario:", data.message);
-          alert("No se pudo iniciar sesión automáticamente. Intentá más tarde.");
-          return false;
-        }
-      } catch (err) {
-        console.error("Error fetch registerUserTelegram:", err);
-        alert("Error de red al registrar usuario.");
-        return false;
-      }
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    console.log("📌 Submit formulario detectado");
+
+    const data = {
+      title: document.getElementById("title").value,
+      date: document.getElementById("date").value,
+      time: document.getElementById("time").value,
+      category: document.getElementById("category").value,
+      description: document.getElementById("description").value,
+    };
+
+    console.log("📌 Datos a enviar:", data);
+
+    try {
+      tg.sendData(JSON.stringify(data));
+      console.log("📌 Datos enviados a Telegram con sendData()");
+      tg.close();
+      console.log("📌 WebApp cerrada");
+    } catch (err) {
+      console.error("❌ Error enviando datos:", err);
+      alert("Error enviando datos al bot: " + err.message);
     }
+  });
 
-    async function sendEventToBackend(eventData) {
-      try {
-        if (!JWT_TOKEN) {
-          console.log("No hay token, intentando registrar usuario...");
-          const ok = await registerUserTelegram();
-          if (!ok) return;
-        }
+  // --- Log MainButton click manual ---
+  tg.MainButton.onClick(() => {
+    console.log("📌 MainButton click detectado");
+  });
 
-        console.log("Enviando evento:", eventData);
-
-        const res = await fetch(EVENTS_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${JWT_TOKEN}`
-          },
-          body: JSON.stringify(eventData)
-        });
-
-        const data = await res.json();
-        console.log("Respuesta backend evento:", data);
-
-        if (res.ok) {
-          alert("✅ Evento guardado correctamente!");
-          tg.close(); // Cerramos WebApp
-        } else {
-          console.error("Error backend:", data.message);
-          alert("Error al guardar evento: " + (data.message || "Intentalo más tarde."));
-        }
-      } catch (err) {
-        console.error("Error sendEventToBackend:", err);
-        alert("Error de red al guardar evento.");
-      }
-    }
-
-    const form = document.getElementById("eventoForm");
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const data = {
-        title: document.getElementById("title").value,
-        date: document.getElementById("date").value,
-        time: document.getElementById("time").value,
-        category: document.getElementById("category").value,
-        description: document.getElementById("description").value
-      };
-
-      console.log("Formulario enviado:", data);
-
-      await sendEventToBackend(data);
-    });
-
-    // --- Opciones Telegram ---
-    tg.expand();
-    tg.MainButton.setText("Enviar");
-  </script>
+  console.log("📌 Script inicializado correctamente");
+</script>
 </body>
 </html>

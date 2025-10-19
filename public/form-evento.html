@@ -1,138 +1,126 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Crear evento</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body {
-      font-family: sans-serif;
-      background: #f8f9fa;
-      padding: 20px;
-    }
-    form {
-      background: #fff;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    input, select, textarea, button {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 12px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      font-size: 16px;
-    }
-    button {
-      background: #4caf50;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #43a047;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Crear evento</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body { font-family: sans-serif; background: #f8f9fa; padding: 20px; }
+  form { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+  input, select, textarea, button { width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
+  button { background: #4caf50; color: white; border: none; cursor: pointer; }
+  button:hover { background: #43a047; }
+</style>
 </head>
 <body>
-  <h2>🗓️ Nuevo evento</h2>
-  <form id="eventoForm">
-    <input type="text" id="title" placeholder="Título del evento" required>
-    <input type="date" id="date" required>
-    <input type="time" id="time" required>
-    <select id="category">
-      <option value="cumpleaños">🎂 Cumpleaños</option>
-      <option value="examen">📝 Examen</option>
-      <option value="deportes">🏅 Deportes</option>
-      <option value="trabajo">💼 Trabajo</option>
-      <option value="medico">🩺 Médico</option>
-      <option value="viaje">✈️ Viaje</option>
-      <option value="otro" selected>📌 Otro</option>
-    </select>
-    <textarea id="description" rows="3" placeholder="Descripción (opcional)"></textarea>
-    <button type="submit">Guardar</button>
-  </form>
+<h2>🗓️ Nuevo evento</h2>
+<form id="eventoForm">
+  <input type="text" id="title" placeholder="Título del evento" required>
+  <input type="date" id="date" required>
+  <input type="time" id="time" required>
+  <select id="category">
+    <option value="cumpleaños">🎂 Cumpleaños</option>
+    <option value="examen">📝 Examen</option>
+    <option value="deportes">🏅 Deportes</option>
+    <option value="trabajo">💼 Trabajo</option>
+    <option value="medico">🩺 Médico</option>
+    <option value="viaje">✈️ Viaje</option>
+    <option value="otro" selected>📌 Otro</option>
+  </select>
+  <textarea id="description" rows="3" placeholder="Descripción (opcional)"></textarea>
+  <button type="submit">Guardar</button>
+</form>
 
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script>
-    const tg = window.Telegram.WebApp;
-    tg.expand();
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+const API_BASE = "https://tu-backend.com"; // Cambiar por tu backend
+const tg = window.Telegram.WebApp;
+tg.expand();
+console.log("Telegram WebApp cargado:", tg);
 
-    // URL base de tu API
-    const API_BASE = "https://tuservidor.com/api";
+function authHeaders() {
+  const token = localStorage.getItem("token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
-    // Guardar token en localStorage
-    async function initTelegramUser() {
-      const chatId = tg.initDataUnsafe?.user?.id;
-      if (!chatId) {
-        alert("No se pudo obtener tu ID de Telegram.");
-        return;
-      }
+// --- Registro / Login automático con Telegram ---
+async function initTelegramUser() {
+  const chatId = tg.initDataUnsafe?.user?.id;
+  console.log("ChatId obtenido:", chatId);
+  if (!chatId) {
+    alert("No se pudo obtener tu ID de Telegram.");
+    return false;
+  }
 
-      try {
-        const res = await fetch(`${API_BASE}/auth/registerTelegram`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ telegram_id: chatId })
-        });
-        const data = await res.json();
-
-        if (res.ok) {
-          localStorage.setItem("token", data.token);
-        } else {
-          alert(data.message || "Error iniciando sesión");
-        }
-      } catch (err) {
-        console.error(err);
-        alert("Error conectando con el servidor");
-      }
-    }
-
-    // Inicializamos Telegram / registro automático
-    initTelegramUser();
-
-    // Helper para headers auth
-    function authHeaders() {
-      const t = localStorage.getItem("token");
-      return t ? { "Authorization": `Bearer ${t}` } : {};
-    }
-
-    // Enviar evento
-    const form = document.getElementById("eventoForm");
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const payload = {
-        title: document.getElementById("title").value,
-        date: document.getElementById("date").value,
-        time: document.getElementById("time").value,
-        category: document.getElementById("category").value,
-        description: document.getElementById("description").value,
-      };
-
-      try {
-        const res = await fetch(`${API_BASE}/events`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", ...authHeaders() },
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-
-        if (res.ok) {
-          // Enviar datos al bot de Telegram
-          tg.sendData(JSON.stringify(payload));
-          alert("Evento creado correctamente");
-          form.reset();
-          tg.close();
-        } else {
-          alert(data.message || "Error creando evento");
-        }
-      } catch (err) {
-        console.error(err);
-        alert("Error conectando con el servidor");
-      }
+  try {
+    const res = await fetch(`${API_BASE}/auth/registerTelegram`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ telegram_id: chatId })
     });
-  </script>
+    console.log("Respuesta registro Telegram:", res);
+    const data = await res.json();
+    console.log("Datos recibidos del registro:", data);
+
+    if (res.ok && data.token) {
+      localStorage.setItem("token", data.token);
+      console.log("Token guardado en localStorage:", data.token);
+      return true;
+    } else {
+      alert(data.message || "No se pudo iniciar sesión automáticamente.");
+      return false;
+    }
+  } catch (err) {
+    console.error("Error initTelegramUser:", err);
+    alert("Error conectando con el servidor");
+    return false;
+  }
+}
+
+// --- Enviar evento ---
+document.getElementById("eventoForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  console.log("Formulario submit detectado");
+
+  const payload = {
+    title: document.getElementById("title").value,
+    date: document.getElementById("date").value,
+    time: document.getElementById("time").value,
+    category: document.getElementById("category").value,
+    description: document.getElementById("description").value,
+  };
+  console.log("Payload a enviar:", payload);
+
+  try {
+    const res = await fetch(`${API_BASE}/events`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    console.log("Respuesta backend evento:", data);
+
+    if (res.ok) {
+      tg.sendData(JSON.stringify(payload));
+      console.log("Datos enviados a Telegram WebApp");
+      alert("Evento creado correctamente");
+      document.getElementById("eventoForm").reset();
+      tg.close();
+      console.log("WebApp cerrada");
+    } else {
+      alert(data.message || "Error creando evento");
+    }
+  } catch (err) {
+    console.error("Error enviando evento:", err);
+    alert("Error conectando con el servidor");
+  }
+});
+
+// Inicializamos todo
+(async () => {
+  const ok = await initTelegramUser();
+  if (!ok) console.warn("No se pudo iniciar sesión automáticamente.");
+})();
+</script>
 </body>
 </html>

@@ -364,12 +364,14 @@ BtnCerrarSesion?.addEventListener("click", ()=>{
   window.location.href="index.html";
 });
 // --- Abrir y cerrar modal de agregar evento ---
-agregar_evento_btn?.addEventListener("click", ()=>{
+AgregarEventoBtn?.addEventListener("click", ()=>{
   agregar_evento_wrapper.classList.add("active");
 });
 cerrar?.addEventListener("click", ()=>{
   agregar_evento_wrapper.classList.remove("active");
 });
+
+
 
 // Inicializar calendario 
 CrearMes();

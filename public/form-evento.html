@@ -5,34 +5,11 @@
   <title>Crear evento</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body {
-      font-family: sans-serif;
-      background: #f8f9fa;
-      padding: 20px;
-    }
-    form {
-      background: #fff;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    input, select, textarea, button {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 12px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      font-size: 16px;
-    }
-    button {
-      background: #4caf50;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #43a047;
-    }
+    body { font-family: sans-serif; background: #f8f9fa; padding: 20px; }
+    form { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    input, select, textarea, button { width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
+    button { background: #4caf50; color: white; border: none; cursor: pointer; }
+    button:hover { background: #43a047; }
   </style>
 </head>
 <body>
@@ -57,9 +34,44 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     const tg = window.Telegram.WebApp;
+    tg.expand();
 
+    const API_BASE = "https://tu-backend.com"; // Cambia esto por tu URL real
     const form = document.getElementById("eventoForm");
-    form.addEventListener("submit", (e) => {
+
+    let token = null;
+
+    async function initUser() {
+      const tgUser = tg.initDataUnsafe?.user;
+      if (!tgUser) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/register-telegram`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            telegram_id: tgUser.id,
+            username: tgUser.username
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Error creando usuario");
+
+        // Guardamos token en localStorage y variable
+        token = data.token;
+        localStorage.setItem("token", token);
+
+        console.log("Usuario listo con token:", token);
+      } catch(err) {
+        console.error("Error inicializando usuario:", err);
+        alert("No se pudo iniciar sesión automáticamente. Intentá más tarde.");
+      }
+    }
+
+    // Inicializamos usuario al cargar la WebApp
+    initUser();
+
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
       const data = {
@@ -70,16 +82,34 @@
         description: document.getElementById("description").value,
       };
 
-      // Enviar datos al bot
-      tg.sendData(JSON.stringify(data));
+      if (!token) {
+        alert("No se pudo autenticar. Cerrá y volvé a abrir la WebApp.");
+        return;
+      }
 
-      // Cerrar WebApp después del envío
-      tg.close();
+      try {
+        // Guardar evento en el backend
+        const res = await fetch(`${API_BASE}/events`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.message || "Error guardando evento");
+
+        // Enviar datos al bot (opcional)
+        tg.sendData(JSON.stringify(result));
+
+        alert("✅ Evento guardado correctamente");
+        tg.close();
+      } catch(err) {
+        console.error(err);
+        alert("⚠️ Error guardando evento: " + err.message);
+      }
     });
-
-    // Personalización opcional
-    tg.expand();
-    tg.MainButton.setText("Enviar");
   </script>
 </body>
 </html>

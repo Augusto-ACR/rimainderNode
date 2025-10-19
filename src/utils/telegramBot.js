@@ -131,10 +131,10 @@ router.post(`/bot${TELEGRAM_BOT_TOKEN}`, async (req, res) => {
       return res.sendStatus(200);
     }
 
-// --- /crear: muestra un botón para abrir la Web App ---
-const WEBAPP_URL = "https://rimaindernode.onrender.com/form-evento.html";
-
+// --- /crear: mostrar botón Web App ---
 if (text?.toLowerCase() === "/crear") {
+  const WEBAPP_URL = "https://rimaindernode.onrender.com/form-evento.html";
+
   await sendTelegramMessage(
     "📝 Tocá el botón de abajo para crear un nuevo evento:",
     chatId,
@@ -150,10 +150,9 @@ if (text?.toLowerCase() === "/crear") {
   return res.sendStatus(200);
 }
 
-// --- Procesar datos enviados desde la Web App ---
+// --- web_app_data: enviar datos a tu API ---
 if (body?.message?.web_app_data) {
   try {
-    const chatId = body.message.chat.id;
     const data = JSON.parse(body.message.web_app_data.data);
     console.log("Datos recibidos desde WebApp:", data);
 
@@ -176,24 +175,29 @@ if (body?.message?.web_app_data) {
       ? category.toLowerCase()
       : "otro";
 
-    const [y, m, d] = date.split("-").map(Number);
-    const event = eventRepo.create({
-      title,
-      date,
-      time,
-      year: y,
-      month: m,
-      day: d,
-      category: cat,
-      description: description || null,
-      user: { id: user.id },
+    // --- Enviar al API REST con token del usuario ---
+    const payload = { title, date, time, category: cat };
+    if (description) payload.description = description;
+
+    const resApi = await fetch(`${API_BASE}/events`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${user.token}`, // <-- el JWT de tu usuario
+      },
+      body: JSON.stringify(payload),
     });
 
-    await eventRepo.save(event);
+    if (!resApi.ok) {
+      const errData = await resApi.json().catch(() => ({}));
+      throw new Error(errData.message || "Error creando evento en API");
+    }
+
+    const { event } = await resApi.json();
 
     const emoji = CATEGORY_EMOJI[cat] || "📌";
     await sendTelegramMessage(
-      `✅ Evento guardado correctamente!\n\n<b>${title} ${emoji}</b>\n📅 ${date} ${time}\n📂 ${cat}`,
+      `✅ Evento guardado correctamente!\n\n<b>${event.title} ${emoji}</b>\n📅 ${event.date} ${event.time}\n📂 ${cat}`,
       chatId,
       "HTML"
     );
@@ -201,10 +205,7 @@ if (body?.message?.web_app_data) {
     return res.sendStatus(200);
   } catch (error) {
     console.error("Error procesando web_app_data:", error);
-    await sendTelegramMessage(
-      "⚠️ Ocurrió un error al guardar el evento.",
-      chatId
-    );
+    await sendTelegramMessage("⚠️ Ocurrió un error al guardar el evento.", chatId);
     return res.sendStatus(200);
   }
 }

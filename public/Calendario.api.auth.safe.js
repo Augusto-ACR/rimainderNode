@@ -363,7 +363,14 @@ BtnCerrarSesion?.addEventListener("click", ()=>{
   localStorage.removeItem("token");
   window.location.href="index.html";
 });
+// --- Abrir y cerrar modal de agregar evento ---
+agregar_evento_btn?.addEventListener("click", ()=>{
+  agregar_evento_wrapper.classList.add("active");
+});
+cerrar?.addEventListener("click", ()=>{
+  agregar_evento_wrapper.classList.remove("active");
+});
 
-// --- Start ---
+// Inicializar calendario 
 CrearMes();
 cargarEventosMesSeguro();

@@ -5,11 +5,34 @@
   <title>Crear evento</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { font-family: sans-serif; background: #f8f9fa; padding: 20px; }
-    form { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    input, select, textarea, button { width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
-    button { background: #4caf50; color: white; border: none; cursor: pointer; }
-    button:hover { background: #43a047; }
+    body {
+      font-family: sans-serif;
+      background: #f8f9fa;
+      padding: 20px;
+    }
+    form {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    input, select, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    button {
+      background: #4caf50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #43a047;
+    }
   </style>
 </head>
 <body>
@@ -36,45 +59,51 @@
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    const API_BASE = "https://tu-backend.com"; // Cambia esto por tu URL real
-    const form = document.getElementById("eventoForm");
+    // URL base de tu API
+    const API_BASE = "https://tuservidor.com/api";
 
-    let token = null;
-
-    async function initUser() {
-      const tgUser = tg.initDataUnsafe?.user;
-      if (!tgUser) return;
+    // Guardar token en localStorage
+    async function initTelegramUser() {
+      const chatId = tg.initDataUnsafe?.user?.id;
+      if (!chatId) {
+        alert("No se pudo obtener tu ID de Telegram.");
+        return;
+      }
 
       try {
-        const res = await fetch(`${API_BASE}/auth/register-telegram`, {
+        const res = await fetch(`${API_BASE}/auth/registerTelegram`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            telegram_id: tgUser.id,
-            username: tgUser.username
-          })
+          body: JSON.stringify({ telegram_id: chatId })
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.message || "Error creando usuario");
 
-        // Guardamos token en localStorage y variable
-        token = data.token;
-        localStorage.setItem("token", token);
-
-        console.log("Usuario listo con token:", token);
-      } catch(err) {
-        console.error("Error inicializando usuario:", err);
-        alert("No se pudo iniciar sesión automáticamente. Intentá más tarde.");
+        if (res.ok) {
+          localStorage.setItem("token", data.token);
+        } else {
+          alert(data.message || "Error iniciando sesión");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Error conectando con el servidor");
       }
     }
 
-    // Inicializamos usuario al cargar la WebApp
-    initUser();
+    // Inicializamos Telegram / registro automático
+    initTelegramUser();
 
+    // Helper para headers auth
+    function authHeaders() {
+      const t = localStorage.getItem("token");
+      return t ? { "Authorization": `Bearer ${t}` } : {};
+    }
+
+    // Enviar evento
+    const form = document.getElementById("eventoForm");
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      const data = {
+      const payload = {
         title: document.getElementById("title").value,
         date: document.getElementById("date").value,
         time: document.getElementById("time").value,
@@ -82,32 +111,26 @@
         description: document.getElementById("description").value,
       };
 
-      if (!token) {
-        alert("No se pudo autenticar. Cerrá y volvé a abrir la WebApp.");
-        return;
-      }
-
       try {
-        // Guardar evento en el backend
         const res = await fetch(`${API_BASE}/events`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          },
-          body: JSON.stringify(data)
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify(payload)
         });
-        const result = await res.json();
-        if (!res.ok) throw new Error(result.message || "Error guardando evento");
+        const data = await res.json();
 
-        // Enviar datos al bot (opcional)
-        tg.sendData(JSON.stringify(result));
-
-        alert("✅ Evento guardado correctamente");
-        tg.close();
-      } catch(err) {
+        if (res.ok) {
+          // Enviar datos al bot de Telegram
+          tg.sendData(JSON.stringify(payload));
+          alert("Evento creado correctamente");
+          form.reset();
+          tg.close();
+        } else {
+          alert(data.message || "Error creando evento");
+        }
+      } catch (err) {
         console.error(err);
-        alert("⚠️ Error guardando evento: " + err.message);
+        alert("Error conectando con el servidor");
       }
     });
   </script>

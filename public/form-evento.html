@@ -34,23 +34,36 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     const tg = window.Telegram.WebApp;
-    const API_BASE = window.location.origin; // mismo dominio
+    const API_BASE = window.location.origin; 
     const EVENTS_URL = `${API_BASE}/events`;
-    const AUTH_URL = `${API_BASE}/auth/registerFromTelegram`;
+    const AUTH_ME_URL = `${API_BASE}/auth/me`; // endpoint que devuelve token desde DB
 
-    // --- Manejo de token ---
-    function getToken() {
-      return localStorage.getItem("token");
+    let currentToken = null; // guardamos el token en memoria
+
+    // --- Traer JWT desde backend ---
+    async function fetchToken() {
+      try {
+        const chatId = tg.initDataUnsafe?.user?.id;
+        if (!chatId) throw new Error("No se pudo obtener Telegram ID");
+
+        const res = await fetch(`${AUTH_ME_URL}?telegram_id=${chatId}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Error obteniendo token");
+        if (!data.token) throw new Error("No se obtuvo token del backend");
+
+        currentToken = data.token;
+      } catch (err) {
+        console.error("Error fetchToken:", err);
+        alert("No se pudo iniciar sesión automáticamente. Intentá más tarde.");
+      }
     }
-    function setToken(token) {
-      localStorage.setItem("token", token);
-    }
+
     function authHeaders() {
-      const t = getToken();
-      return t ? { Authorization: `Bearer ${t}` } : {};
+      return currentToken ? { Authorization: `Bearer ${currentToken}` } : {};
     }
 
     async function apiJSON(url, method, body) {
+      if (!currentToken) await fetchToken();
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json", ...authHeaders() },
@@ -59,31 +72,6 @@
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.message || "Error de red");
       return data;
-    }
-
-    // --- Registro automático desde Telegram ---
-    async function initUser() {
-      try {
-        if (!getToken()) {
-          // Telegram WebApp pasa el chat_id
-          const chatId = tg.initDataUnsafe?.user?.id;
-          if (!chatId) throw new Error("No se pudo obtener Telegram ID");
-
-          const res = await fetch(AUTH_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ telegram_id: chatId })
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.message || "Error registrando usuario");
-
-          if (data.token) setToken(data.token);
-        }
-        console.log("Usuario listo, token:", getToken());
-      } catch (err) {
-        alert("No se pudo iniciar sesión automáticamente. Intentá más tarde.");
-        console.error("Error initUser:", err);
-      }
     }
 
     // --- Evento submit ---
@@ -101,7 +89,7 @@
       try {
         await apiJSON(EVENTS_URL, "POST", payload);
         alert("Evento guardado correctamente ✅");
-        tg.close(); // cerrar WebApp
+        tg.close(); 
       } catch (err) {
         console.error("Error al guardar evento:", err);
         alert("Error al guardar evento: " + err.message);
@@ -109,7 +97,7 @@
     });
 
     // --- Inicializar ---
-    initUser();
+    fetchToken();
     tg.expand();
   </script>
 </body>

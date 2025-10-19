@@ -1,38 +1,63 @@
 // Calendario.api.auth.safe.js
-// Renderiza el calendario SIEMPRE (aunque falle la API), y maneja token ausente/401.
+// Renderiza el calendario SIEMPRE (aunque falle la API), y maneja token desde DB
 
 const API_BASE = ""; // mismo origin
 const EVENTS_URL = `${API_BASE}/events`;
 
 // --- Helpers API ---
-function getToken() {
-  return localStorage.getItem("token");
+// Intenta obtener token desde DB vía backend
+async function fetchTokenFromDB() {
+  try {
+    const res = await fetch('/auth/me', { credentials: 'include' });
+    if (!res.ok) throw new Error('No se pudo obtener token');
+    const data = await res.json();
+    if (data?.token) {
+      localStorage.setItem('token', data.token);
+      return data.token;
+    }
+    throw new Error('Token no disponible');
+  } catch (err) {
+    console.warn('No se pudo obtener token desde DB:', err.message);
+    localStorage.removeItem('token');
+    return null;
+  }
 }
-function authHeaders() {
-  const t = getToken();
-  return t ? { Authorization: `Bearer ${t}` } : {};
+
+// Devuelve token, primero intenta localStorage, luego DB
+async function getToken() {
+  let t = localStorage.getItem('token');
+  if (!t) {
+    t = await fetchTokenFromDB();
+  }
+  return t;
 }
+
 async function apiGET(url) {
-  const res = await fetch(url, { credentials: "include", headers: { ...authHeaders() } });
+  const t = await getToken();
+  if (!t) throw new Error('No hay token disponible');
+  const res = await fetch(url, { credentials: 'include', headers: { Authorization: `Bearer ${t}` } });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const msg = data?.message || "Error de red";
+    const msg = data?.message || 'Error de red';
     const err = new Error(msg);
     err.status = res.status;
     throw err;
   }
   return data;
 }
+
 async function apiJSON(url, method, body) {
+  const t = await getToken();
+  if (!t) throw new Error('No hay token disponible');
   const res = await fetch(url, {
     method,
-    headers: { "Content-Type": "application/json", ...authHeaders() },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
     credentials: "include",
     body: JSON.stringify(body)
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const msg = data?.message || "Error de red";
+    const msg = data?.message || 'Error de red';
     const err = new Error(msg);
     err.status = res.status;
     throw err;
@@ -58,7 +83,6 @@ const cerrar = document.querySelector(".cerrar");
 const AgregarEventoBtn = document.querySelector(".AgregarEventoBtn");
 const evento_titulo = document.querySelector(".evento-titulo");
 const evento_hora = document.querySelector(".evento-hora");
-const selectCategoria = document.getElementById('categorias');
 const inputComentario = document.querySelector(".Comentarios-Eventos");
 
 let FechaHoy = new Date();
@@ -69,11 +93,8 @@ let diaSeleccionado = null;
 let mesSeleccionado = null;
 let anioSeleccionado = null;
 
-
-const mesesDelAño = [
-  "Enero","Febrero","Marzo","Abril","Mayo","Junio",
-  "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"
-];
+const mesesDelAño = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
+  "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
 let eventosMes = {};
 
@@ -87,7 +108,7 @@ const CATEGORY_EMOJI = {
   'otro': '📌',
 };
 
-// --- Render DÍAS (sin tocar API) ---
+// --- Render DÍAS ---
 function CrearMes() {
   const primerDia = new Date(anioActual, mesActual, 1);
   const ultimoDia = new Date(anioActual, mesActual + 1, 0);
@@ -133,7 +154,6 @@ function CrearMes() {
   MarcarDiasConEventos();
 }
 
-// --- Marca los días que tienen eventos (si los hay) ---
 function MarcarDiasConEventos() {
   const dias = ContenedorDias.querySelectorAll(".dia:not(.dia-previo):not(.dia-siguiente)");
   dias.forEach((dEl) => {
@@ -143,12 +163,12 @@ function MarcarDiasConEventos() {
   });
 }
 
-// --- Carga eventos del mes desde la API (seguro) ---
+// --- Carga eventos del mes ---
 async function cargarEventosMesSeguro() {
   try {
-    if (!getToken()) {
-      // Si no hay token, renderizamos grid y mandamos al login
-      MarcarDiasConEventos(); // no hay eventos
+    const t = await getToken();
+    if (!t) {
+      MarcarDiasConEventos();
       setTimeout(() => (window.location.href = "index.html"), 50);
       return;
     }
@@ -157,42 +177,24 @@ async function cargarEventosMesSeguro() {
     for (const ev of events) {
       const d = ev.day;
       if (!eventosMes[d]) eventosMes[d] = [];
-      eventosMes[d].push({ id: ev.id, titulo: ev.title, hora: ev.time });
+      eventosMes[d].push({ id: ev.id, titulo: ev.title, hora: ev.time, categoria: ev.category });
     }
     MarcarDiasConEventos();
     MostrarSiHoyEsVisible();
     if (activeDia) mostarEventos(activeDia);
   } catch (err) {
-    // 401 -> login
     if (err.status === 401) {
-      setTimeout(() => (window.location.href = "index.html"), 50);
+      localStorage.removeItem('token');
+      window.location.href = "index.html";
       return;
     }
     console.warn("No se pudieron cargar eventos:", err.message);
-    // Dejar renderizada la grilla aunque la API falle
   }
 }
 
-// --- Navegación de meses ---
-function MesAnterior() {
-  mesActual--;
-  if (mesActual < 0) {
-    mesActual = 11;
-    anioActual--;
-  }
-  CrearMes();
-  cargarEventosMesSeguro();
-}
-
-function MesSiguiente() {
-  mesActual++;
-  if (mesActual > 11) {
-    mesActual = 0;
-    anioActual++;
-  }
-  CrearMes();
-  cargarEventosMesSeguro();
-}
+// --- Navegación meses ---
+function MesAnterior() { mesActual--; if (mesActual<0){mesActual=11; anioActual--;} CrearMes(); cargarEventosMesSeguro(); }
+function MesSiguiente() { mesActual++; if (mesActual>11){mesActual=0; anioActual++;} CrearMes(); cargarEventosMesSeguro(); }
 
 izquierda?.addEventListener("click", MesAnterior);
 derecha?.addEventListener("click", MesSiguiente);
@@ -209,60 +211,59 @@ btnFechaActual?.addEventListener("click", () => {
   cargarEventosMesSeguro();
   SeleccionarYMarcarDia(diaSeleccionado);
 });
+
+// --- Selección de fecha manual ---
 EntradaFecha?.addEventListener("input", (e) => {
-  EntradaFecha.value=EntradaFecha.value.replace(/ [^0-9/]/g, "");
+  EntradaFecha.value = EntradaFecha.value.replace(/[^0-9/]/g, "");
   if (EntradaFecha.value.length === 2) EntradaFecha.value += "/";
-  if (EntradaFecha.value.length > 7) EntradaFecha.value = EntradaFecha.value.slice(0, 7);
-  if (e.inputType === "deleteContentBackward") {
-    if (EntradaFecha.value.length === 3) EntradaFecha.value = EntradaFecha.value.slice(0, 2);
-  }
+  if (EntradaFecha.value.length > 7) EntradaFecha.value = EntradaFecha.value.slice(0,7);
+  if (e.inputType==="deleteContentBackward" && EntradaFecha.value.length===3)
+    EntradaFecha.value = EntradaFecha.value.slice(0,2);
 });
 
 BtnEntradaFecha?.addEventListener("click", () => {
-  const arrfechaIngresada = EntradaFecha.value.split("/");
-  if (arrfechaIngresada.length === 2) {
-    if (arrfechaIngresada[0] > 0 && arrfechaIngresada[0] < 13 && arrfechaIngresada[1].length === 4) {
-      mesActual = parseInt(arrfechaIngresada[0]) - 1;
-      anioActual = parseInt(arrfechaIngresada[1]);
-      CrearMes();
-      cargarEventosMesSeguro();
-      return;
-    }
-  } else {
-    alert("Ingresa un formato correcto");
-  }
+  const arr = EntradaFecha.value.split("/");
+  if (arr.length===2 && arr[0]>0 && arr[0]<13 && arr[1].length===4) {
+    mesActual=parseInt(arr[0])-1;
+    anioActual=parseInt(arr[1]);
+    CrearMes(); cargarEventosMesSeguro();
+  } else alert("Ingresa un formato correcto");
 });
 
+// --- Selección y marcado de días ---
+function MarcararDiaSeleccionado() {
+  const dias = document.querySelectorAll(".dia");
+  dias.forEach((dia) => {
+    dia.addEventListener("click", async (e) => {
+      const num = Number(e.target.textContent.trim());
+      if (e.target.classList.contains("dia-previo")) {
+        MesAnterior(); setTimeout(()=>SeleccionarYMarcarDia(num),100);
+      } else if (e.target.classList.contains("dia-siguiente")) {
+        MesSiguiente(); setTimeout(()=>SeleccionarYMarcarDia(num),100);
+      } else {
+        SeleccionarYMarcarDia(num);
+      }
+    });
+  });
+}
 
+function SeleccionarYMarcarDia(number) {
+  activeDia = number; diaSeleccionado=number; mesSeleccionado=mesActual; anioSeleccionado=anioActual;
+  SeleccionarDia(number);
+  document.querySelectorAll(".dia").forEach(d=>d.classList.remove("active"));
+  const el = Array.from(document.querySelectorAll(".dia"))
+    .find(d=>Number(d.textContent.trim())===number && !d.classList.contains("dia-previo") && !d.classList.contains("dia-siguiente"));
+  if(el) el.classList.add("active");
+  mostarEventos(number);
+}
 
-AgregarEventoBtn?.addEventListener("click", () => {
-  agregar_evento_wrapper.classList.add("active");
-});
-cerrar?.addEventListener("click", () => {
-  agregar_evento_wrapper.classList.remove("active");
-  evento_titulo.value = "";
-  evento_hora.value = "";
-});
-document.addEventListener("click", (e) => {
-  if (e.target !== AgregarEventoBtn && !agregar_evento_wrapper.contains(e.target)) {
-    agregar_evento_wrapper.classList.remove("active");
-    evento_titulo.value = "";
-    evento_hora.value = "";
-  }
-});
-
-evento_titulo?.addEventListener("input", () => {
-  evento_titulo.value = evento_titulo.value.slice(0, 30);
-});
-
-evento_hora?.addEventListener("input", (e) => {
-  evento_hora.value = evento_hora.value.replace(/[^0-9:]/g, "");
-  if (evento_hora.value.length === 2) evento_hora.value += ":";
-  if (evento_hora.value.length > 5) evento_hora.value = evento_hora.value.slice(0, 5);
-  if (e.inputType === "deleteContentBackward") {
-    if (evento_hora.value.length === 3) evento_hora.value = evento_hora.value.slice(0, 2);
-  }
-});
+function SeleccionarDia(FechaNum) {
+  const dia = new Date(anioActual, mesActual, FechaNum);
+  diaSeleccionado=FechaNum; mesSeleccionado=mesActual; anioSeleccionado=anioActual;
+  const NombreDia = dia.toLocaleDateString("es-ES",{weekday:"long"});
+  eventoDia.innerHTML=NombreDia;
+  FechaEvento.innerHTML=`${FechaNum} ${mesesDelAño[mesActual]} ${anioActual}`;
+}
 
 function InformacionDeHoy() {
   const now = new Date();
@@ -270,73 +271,24 @@ function InformacionDeHoy() {
 }
 
 function MostrarSiHoyEsVisible() {
-  const { y, m, d } = InformacionDeHoy();
-  if (y === anioActual && m === mesActual) {
-    activeDia = d;
+  const {y,m,d} = InformacionDeHoy();
+  if (y===anioActual && m===mesActual){
+    activeDia=d;
     SeleccionarDia(d);
     mostarEventos(d);
-    // marcar .active en el número de día correcto
     const dias = ContenedorDias.querySelectorAll(".dia:not(.dia-previo):not(.dia-siguiente)");
-    dias.forEach(el => el.classList.remove("active"));
-    const el = Array.from(dias).find(el => Number(el.textContent.trim()) === d);
-    if (el) el.classList.add("active");
+    dias.forEach(el=>el.classList.remove("active"));
+    const el = Array.from(dias).find(el=>Number(el.textContent.trim())===d);
+    if(el) el.classList.add("active");
   }
 }
 
-function MarcararDiaSeleccionado() {
-  const dias = document.querySelectorAll(".dia");
-  dias.forEach((dia) => {
-    dia.addEventListener("click", async (e) => {
-      const number = Number(e.target.textContent.trim());
-
-      if (e.target.classList.contains("dia-previo")) {
-        MesAnterior();
-        setTimeout(() => SeleccionarYMarcarDia(number), 100);
-      } else if (e.target.classList.contains("dia-siguiente")) {
-        MesSiguiente();
-        setTimeout(() => SeleccionarYMarcarDia(number), 100);
-      } else {
-        SeleccionarYMarcarDia(number);
-      }
-    });
-  });
-}
-
-
-function SeleccionarYMarcarDia(number) {
-  activeDia = number;
-  diaSeleccionado = number;
-  mesSeleccionado = mesActual;
-  anioSeleccionado = anioActual;
-  SeleccionarDia(number);
-
-  document.querySelectorAll(".dia").forEach((d) => d.classList.remove("active"));
-  const el = Array.from(document.querySelectorAll(".dia"))
-    .find((d) => Number(d.textContent.trim()) === number && !d.classList.contains("dia-previo") && !d.classList.contains("dia-siguiente"));
-  if (el) el.classList.add("active");
-
-  mostarEventos(number);
-}
-
-
-function SeleccionarDia(FechaNum) {
-  const dia = new Date(anioActual, mesActual, FechaNum);
-  diaSeleccionado = FechaNum;
-  mesSeleccionado = mesActual;
-  anioSeleccionado = anioActual;
-  const NombreDia = dia.toLocaleDateString("es-ES", { weekday: "long" });
-  eventoDia.innerHTML = NombreDia;
-  FechaEvento.innerHTML = `${FechaNum} ${mesesDelAño[mesActual]} ${anioActual}`;
-}
-
-
-
+// --- Mostrar eventos ---
 async function mostarEventos(FechaNum){
-    const selectCategoria = document.getElementById("categorias");
   const list = eventosMes[Number(FechaNum)] || [];
-  let eventos = "";
-  list.forEach((ev) => {
-    eventos += `<div class="evento" data-id="${ev.id}">
+  let eventos="";
+  list.forEach(ev=>{
+    eventos+=`<div class="evento" data-id="${ev.id}">
       <div class="evento-titulo">
         <div class="evento-categoria-emoji">${CATEGORY_EMOJI[ev.categoria] || '📌'}</div>
         <div class="TituloEvento">${ev.titulo}</div>
@@ -344,139 +296,74 @@ async function mostarEventos(FechaNum){
       <div class="evento-hora">${ev.hora}</div>
     </div>`;
   });
-  if (eventos === "") {
-    eventos = `<div class="no-evento"><h3>No hay eventos para este día</h3></div>`;
-  }
-  contenedoreventos.innerHTML = eventos;
+  if(eventos==="") eventos=`<div class="no-evento"><h3>No hay eventos para este día</h3></div>`;
+  contenedoreventos.innerHTML=eventos;
 }
 
-// Crear evento via API
-agregar_evento_btn?.addEventListener("click", async () => {
+// --- Crear evento ---
+agregar_evento_btn?.addEventListener("click", async ()=>{
   const TituloEvento = evento_titulo.value.trim();
   const HoraEvento = evento_hora.value.trim();
-  const comentario = (inputComentario?.value || "").trim();
-
-  // Validaciones básicas primero
-  if (TituloEvento === "" || HoraEvento === "") {
-    alert("Debe ingresar un titulo y una hora");
-    return;
-  }
+  const comentario = (inputComentario?.value||"").trim();
+  if(TituloEvento===""||HoraEvento===""){alert("Debe ingresar un titulo y una hora"); return;}
   const parts = HoraEvento.split(":");
-  if (parts.length !== 2 || Number(parts[0]) > 23 || Number(parts[1]) > 59) {
-    alert("Formato de hora inválido");
-    return;
-  }
-
-  // Día seleccionado
+  if(parts.length!==2 || Number(parts[0])>23 || Number(parts[1])>59){alert("Formato de hora inválido"); return;}
   const day = activeDia;
-  if (!day) {
-    alert("Seleccioná un día en el calendario");
-    return;
-  }
-
-  // Armar fecha YYYY-MM-DD
+  if(!day){alert("Seleccioná un día"); return;}
   const yyyy = anioActual;
-  const mm = String(mesActual + 1).padStart(2, "0");
-  const dd = String(day).padStart(2, "0");
+  const mm = String(mesActual+1).padStart(2,'0');
+  const dd = String(day).padStart(2,'0');
   const dateStr = `${yyyy}-${mm}-${dd}`;
-
-  // Leer categoría del select (usar 'otro' si no eligieron)
   const selectCategoria = document.getElementById("categorias");
-  const categoria = (selectCategoria?.value && selectCategoria.value !== "ninguna")
-    ? selectCategoria.value
-    : "otro";
+  const categoria = (selectCategoria?.value && selectCategoria.value!=="ninguna") ? selectCategoria.value : "otro";
 
   try {
-    // Un solo POST, incluyendo category
-   const payload = {
-  title: TituloEvento,
-  date: dateStr,
-  time: HoraEvento,
-  category: categoria,
-};
-if (comentario) payload.description = comentario; // ← opcional
-
-const { event } = await apiJSON(EVENTS_URL, "POST", payload);
-
-inputComentario.value = "";
-
-    // Actualizar cache del mes (si guardás categoría, podés sumarla acá)
-    if (!eventosMes[day]) eventosMes[day] = [];
-    eventosMes[day].push({
-      id: event.id,
-      titulo: event.title,
-      hora: event.time,
-      categoria: event.category, // opcional si luego lo querés mostrar
-    });
-
-    // Reset UI
+    const payload = { title: TituloEvento, date: dateStr, time: HoraEvento, category: categoria };
+    if(comentario) payload.description=comentario;
+    const { event } = await apiJSON(EVENTS_URL,"POST",payload);
+    inputComentario.value="";
+    if(!eventosMes[day]) eventosMes[day]=[];
+    eventosMes[day].push({id:event.id, titulo:event.title, hora:event.time, categoria:event.category});
     agregar_evento_wrapper.classList.remove("active");
-    evento_titulo.value = "";
-    evento_hora.value = "";
+    evento_titulo.value=""; evento_hora.value="";
     await mostarEventos(day);
-
     const diaActivo = document.querySelector(".dia.active");
-    if (diaActivo && !diaActivo.classList.contains("evento")) {
-      diaActivo.classList.add("evento");
-    }
-  } catch (err) {
-    if (err.status === 401) {
-      alert("Sesión expirada. Volvé a iniciar sesión.");
-      localStorage.removeItem("token");
-      window.location.href = "index.html";
-      return;
-    }
-    alert("Error creando evento: " + err.message);
+    if(diaActivo && !diaActivo.classList.contains("evento")) diaActivo.classList.add("evento");
+  } catch(err){
+    if(err.status===401){ alert("Sesión expirada."); localStorage.removeItem("token"); window.location.href="index.html"; return; }
+    alert("Error creando evento: "+err.message);
   }
 });
-// Eliminar evento via API (click sobre tarjeta)
-contenedoreventos?.addEventListener("click", async (e) => {
-  const card = e.target.closest(".evento");
-  if (!card) return;
 
+// --- Eliminar evento ---
+contenedoreventos?.addEventListener("click", async (e)=>{
+  const card = e.target.closest(".evento");
+  if(!card) return;
   const id = Number(card.dataset.id);
   const titulo = card.querySelector(".TituloEvento")?.textContent || "";
-
-  const confirmacion = confirm(`¿Eliminar "${titulo}"?`);
-  if (!confirmacion) return;
-
-  try {
-    // DELETE al backend
-    const data = await apiJSON(`${EVENTS_URL}/${id}`, "DELETE", {});
-    
-    // Mostrar mensaje que viene del backend
-    alert(data.message); // Ej: 'Evento "X" fue resuelto y eliminado'
-
-    // Actualizamos la lista local
-    const list = eventosMes[activeDia] || [];
-    const idx = list.findIndex(ev => ev.id === id);
-    if (idx >= 0) list.splice(idx, 1);
-
+  if(!confirm(`¿Eliminar "${titulo}"?`)) return;
+  try{
+    const data = await apiJSON(`${EVENTS_URL}/${id}`,"DELETE",{});
+    alert(data.message);
+    const list = eventosMes[activeDia]||[];
+    const idx = list.findIndex(ev=>ev.id===id);
+    if(idx>=0) list.splice(idx,1);
     await mostarEventos(activeDia);
-
-    // Limpiar clases si no hay eventos en el día
     const activeDiaelemento = document.querySelector(".dia.active");
-    if (activeDiaelemento && (!eventosMes[activeDia] || eventosMes[activeDia].length === 0)) {
+    if(activeDiaelemento && (!eventosMes[activeDia]||eventosMes[activeDia].length===0))
       activeDiaelemento.classList.remove("evento");
-    }
-
-  } catch (err) {
-    if (err.status === 401) {
-      alert("Sesión expirada. Volvé a iniciar sesión.");
-      localStorage.removeItem("token");
-      window.location.href = "index.html";
-      return;
-    }
-    alert("Error eliminando evento: " + err.message);
+  }catch(err){
+    if(err.status===401){ alert("Sesión expirada."); localStorage.removeItem("token"); window.location.href="index.html"; return; }
+    alert("Error eliminando evento: "+err.message);
   }
 });
 
-// Cerrar sesión
-BtnCerrarSesion?.addEventListener("click", () => {
+// --- Cerrar sesión ---
+BtnCerrarSesion?.addEventListener("click", ()=>{
   localStorage.removeItem("token");
-  window.location.href = "index.html";
+  window.location.href="index.html";
 });
 
-// Start: render primero y luego intenta cargar eventos
+// --- Start ---
 CrearMes();
 cargarEventosMesSeguro();

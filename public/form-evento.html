@@ -5,15 +5,57 @@
   <title>Crear evento</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { font-family: sans-serif; background: #f8f9fa; padding: 20px; }
-    form { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    input, select, textarea, button { width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
-    button { background: #4caf50; color: white; border: none; cursor: pointer; }
-    button:hover { background: #43a047; }
+    body { 
+      font-family: sans-serif; 
+      background: #f8f9fa; 
+      padding: 20px; 
+    }
+    form { 
+      background: #fff; 
+      padding: 20px; 
+      border-radius: 12px; 
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: opacity 0.3s ease; 
+    }
+    .loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    input, select, textarea, button { 
+      width: 100%; 
+      padding: 10px; 
+      margin-bottom: 12px; 
+      border-radius: 8px; 
+      border: 1px solid #ccc; 
+      font-size: 16px; 
+    }
+    button { 
+      background: #4caf50; 
+      color: white; 
+      border: none; 
+      cursor: pointer; 
+      transition: background 0.3s ease;
+    }
+    button:hover { 
+      background: #43a047; 
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .error-message {
+      color: #d32f2f;
+      padding: 10px;
+      border-radius: 8px;
+      background: #ffebee;
+      margin-bottom: 10px;
+      display: none;
+    }
   </style>
 </head>
 <body>
   <h2>🗓️ Nuevo evento</h2>
+  <div id="errorMessage" class="error-message"></div>
   <form id="eventoForm">
     <input type="text" id="title" placeholder="Título del evento" required>
     <input type="date" id="date" required>
@@ -33,28 +75,59 @@
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
-    const tg = window.Telegram.WebApp;
+    // Verificar entorno Telegram
+    const tg = window.Telegram?.WebApp;
+    if (!tg) {
+      document.body.innerHTML = '<h2>❌ Error: Esta página debe abrirse desde Telegram</h2>';
+      throw new Error('No está en entorno Telegram WebApp');
+    }
+
     const API_BASE = window.location.origin; 
     const EVENTS_URL = `${API_BASE}/events`;
-    const AUTH_ME_URL = `${API_BASE}/auth/me`; // endpoint que devuelve token desde DB
+    const AUTH_ME_URL = `${API_BASE}/auth/me`;
+    
+    let currentToken = null;
+    const form = document.getElementById("eventoForm");
+    const errorMessage = document.getElementById("errorMessage");
 
-    let currentToken = null; // guardamos el token en memoria
+    function showError(message) {
+      errorMessage.textContent = message;
+      errorMessage.style.display = 'block';
+      setTimeout(() => {
+        errorMessage.style.display = 'none';
+      }, 5000);
+    }
 
-    // --- Traer JWT desde backend ---
     async function fetchToken() {
       try {
+        console.log('InitData:', tg.initData);
+        console.log('User:', tg.initDataUnsafe?.user);
+        
         const chatId = tg.initDataUnsafe?.user?.id;
-        if (!chatId) throw new Error("No se pudo obtener Telegram ID");
+        if (!chatId) {
+          throw new Error("No se pudo obtener Telegram ID - Usuario no disponible");
+        }
 
+        console.log('Intentando obtener token para chatId:', chatId);
+        
         const res = await fetch(`${AUTH_ME_URL}?telegram_id=${chatId}`);
+        console.log('Respuesta Auth:', res.status, res.statusText);
+        
         const data = await res.json();
-        if (!res.ok) throw new Error(data.message || "Error obteniendo token");
-        if (!data.token) throw new Error("No se obtuvo token del backend");
+        console.log('Data Auth:', data);
+
+        if (!res.ok || !data.token) {
+          throw new Error(data.message || "Error obteniendo token");
+        }
 
         currentToken = data.token;
+        console.log('Token obtenido correctamente');
+        return true;
+
       } catch (err) {
-        console.error("Error fetchToken:", err);
-        alert("No se pudo iniciar sesión automáticamente. Intentá más tarde.");
+        console.error("Error detallado fetchToken:", err);
+        showError(`Error de autenticación: ${err.message}`);
+        return false;
       }
     }
 
@@ -63,42 +136,72 @@
     }
 
     async function apiJSON(url, method, body) {
-      if (!currentToken) await fetchToken();
+      if (!currentToken) {
+        const success = await fetchToken();
+        if (!success) {
+          throw new Error("No se pudo obtener autorización");
+        }
+      }
+
       const res = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json", ...authHeaders() },
+        headers: { 
+          "Content-Type": "application/json", 
+          ...authHeaders() 
+        },
         body: JSON.stringify(body)
       });
+
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data?.message || "Error de red");
+      if (!res.ok) {
+        throw new Error(data?.message || `Error ${res.status}: ${res.statusText}`);
+      }
       return data;
     }
 
-    // --- Evento submit ---
-    const form = document.getElementById("eventoForm");
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const payload = {
-        title: document.getElementById("title").value.trim(),
-        date: document.getElementById("date").value,
-        time: document.getElementById("time").value,
-        category: document.getElementById("category").value,
-        description: document.getElementById("description").value.trim()
-      };
-
+      const submitBtn = form.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Guardando...';
+      form.classList.add('loading');
+      
       try {
+        const payload = {
+          title: document.getElementById("title").value.trim(),
+          date: document.getElementById("date").value,
+          time: document.getElementById("time").value,
+          category: document.getElementById("category").value,
+          description: document.getElementById("description").value.trim()
+        };
+        
         await apiJSON(EVENTS_URL, "POST", payload);
         alert("Evento guardado correctamente ✅");
-        tg.close(); 
+        tg.close();
       } catch (err) {
         console.error("Error al guardar evento:", err);
-        alert("Error al guardar evento: " + err.message);
+        showError("Error al guardar evento: " + err.message);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Guardar';
+        form.classList.remove('loading');
       }
     });
 
-    // --- Inicializar ---
-    fetchToken();
+    // Inicialización
+    document.addEventListener('DOMContentLoaded', async () => {
+      form.classList.add('loading');
+      const success = await fetchToken();
+      if (success) {
+        form.classList.remove('loading');
+      } else {
+        form.innerHTML = '<h3>❌ No se pudo iniciar sesión</h3><p>Por favor, intentá más tarde</p>';
+      }
+    });
+
+    // Configuración Telegram WebApp
     tg.expand();
+    tg.enableClosingConfirmation();
   </script>
 </body>
 </html>

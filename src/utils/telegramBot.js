@@ -131,29 +131,29 @@ router.post(`/bot${TELEGRAM_BOT_TOKEN}`, async (req, res) => {
       return res.sendStatus(200);
     }
 
-    // --- /crear ---
-// Muestra un botón que abre el formulario WebApp
+// --- /crear: muestra un botón para abrir la Web App ---
 const WEBAPP_URL = "https://rimaindernode.onrender.com/form-evento.html";
 
 if (text?.toLowerCase() === "/crear") {
-await sendTelegramMessage(
-  "📝 Tocá el botón de abajo para crear un nuevo evento:",
-  chatId,
-  undefined,
-  {
-    reply_markup: {
-      inline_keyboard: [
-        [{ text: "🗓️ Crear evento", web_app: { url: WEBAPP_URL } }],
-      ],
-    },
-  }
-);
+  await sendTelegramMessage(
+    "📝 Tocá el botón de abajo para crear un nuevo evento:",
+    chatId,
+    undefined,
+    {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "🗓️ Crear evento", web_app: { url: WEBAPP_URL } }],
+        ],
+      },
+    }
+  );
   return res.sendStatus(200);
 }
 
-// --- Cuando llega respuesta del formulario (web_app_data) ---
+// --- Procesar datos enviados desde la Web App ---
 if (body?.message?.web_app_data) {
   try {
+    const chatId = body.message.chat.id;
     const data = JSON.parse(body.message.web_app_data.data);
     console.log("Datos recibidos desde WebApp:", data);
 
@@ -201,11 +201,13 @@ if (body?.message?.web_app_data) {
     return res.sendStatus(200);
   } catch (error) {
     console.error("Error procesando web_app_data:", error);
-    await sendTelegramMessage("⚠️ Ocurrió un error al guardar el evento.", chatId);
+    await sendTelegramMessage(
+      "⚠️ Ocurrió un error al guardar el evento.",
+      chatId
+    );
     return res.sendStatus(200);
   }
 }
-
 
   } catch (err) {
     console.error("Error processing Telegram webhook:", err);

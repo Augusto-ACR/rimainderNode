@@ -90,7 +90,7 @@ router.post(`/bot${TELEGRAM_BOT_TOKEN}`, async (req, res) => {
         } else {
           // Cuenta existente
           await sendTelegramMessage(
-            `👋 Hola ${data.username || user.username}!\nYa tenés una cuenta registrada.\nID de usuario: ${data.id || user.id}\nSi querés cambiar la contraseña usá la opción de recuperación en la app.`,
+            `👋 Hola ${data.username || user.username}!\nYa tenés una cuenta registrada.\nID de usuario: ${data.id || user.id}\nSi querés cambiar la contraseña usá la opción de recuperación en la web.`,
             chatId
           );
         }
